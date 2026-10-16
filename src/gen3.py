@@ -6,12 +6,13 @@ wall-2026.json      2026 posts from the Mac archive (_служебное/posts.j
 links-2026.jsonl    the same posts re-read with links kept in the text as ⟦href|anchor⟧
 archive-linked.json older posts that 2026 posts link to (shown as pages, not in the feed)
 """
-import json, re, os, sys
+import json, re, os, sys, html
 from urllib.parse import unquote, urlparse, parse_qs
 
 SRC, RICH, ARCH, OUT = sys.argv[1:5]
 VIDS = sys.argv[5] if len(sys.argv) > 5 else ""
 rows = json.load(open(SRC, encoding="utf-8"))
+DEFAULT_VTITLE = re.compile(r"^\s*((clip|video) by\b|.*\.(mp4|mov|avi|mkv|3gp|webm)\s*$|(vid|img|mov|video)[_-]?\d|\S{30,}\s*$)", re.I)  # VK defaults and file names, not real headings
 rich = {}
 if os.path.exists(RICH):
     for l in open(RICH, encoding="utf-8"):
@@ -25,8 +26,9 @@ if VIDS and os.path.exists(VIDS):
         if l.strip():
             v = json.loads(l)
             videos[v["post_id"].split("_")[1]] = [
-                {"id": x.get("id", ""), "cover": x.get("cover") or "", "duration": x.get("duration") or "",
-                 "title": x.get("title") or "", "embed": x.get("embed") or ""} for x in v.get("videos", [])]
+                {"id": x.get("id", ""), "cover": html.unescape(x.get("cover") or ""), "duration": x.get("duration") or "",
+                 "title": "" if DEFAULT_VTITLE.match(x.get("title") or "") else (x.get("title") or ""),
+                 "embed": html.unescape(x.get("embed") or "")} for x in v.get("videos", [])]
 site_ids = {r["id"] for r in rows if r["text"].strip() or r["photos"] or rich.get(r["id"], "").strip() or videos.get(r["id"])} | {a["id"] for a in arch}
 
 GREET = re.compile(r"^(доброе утро|доброго утра|добрый день|доброго дня|добрый вечер|доброго вечера|доброй ночи|спокойной ночи)\b", re.I)

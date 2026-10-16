@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,600;0,700;1,700;1,800&family=Golos+Text:wght@400;500;600&display=swap">
 <style>
+
 /* Layout: depot board. A graphite masthead, one reading column for text, slides shown as the carousel they are in VK. */
 :root {
   --bg: #1c1f23;
@@ -316,12 +317,14 @@ function matches(p) {
   return true;
 }
 
+// VK video covers are signed links that expire: fall back to the «Видео» placeholder
+const COVER_FB = "this.replaceWith(Object.assign(document.createElement('div'),{className:'nophoto',textContent:'Видео'}))";
 const PLAY = `<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>`;
 function itemHtml(p, lead) {
   const ph = p.photos[0], v = (p.videos || [])[0];
   let pic;
   if (ph) pic = lead ? imgTag(ph, "thumb", true) : `<img class="thumb" src="${esc(ph.thumb || ph.full)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
-  else if (v && v.cover) pic = `<img class="thumb" src="${esc(v.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+  else if (v && v.cover) pic = `<img class="thumb" src="${esc(v.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="${COVER_FB}">`;
   else pic = `<div class="nophoto">${v ? "Видео" : "Текст"}</div>`;
   pic = `<div class="pic">${pic}${v ? PLAY + (v.duration ? `<span class="dur">${esc(v.duration)}</span>` : "") : ""}</div>`;
   const lede = p.body[0] ? unmark(p.body[0]) : "";
@@ -427,9 +430,9 @@ function renderPost(p) {
       </div>
       ${(p.videos || []).map((v, k) => `<div class="video" data-k="${k}">
         ${v.embed ? `<button class="vcover" type="button" data-embed="${esc(v.embed)}" aria-label="Смотреть видео${v.title ? ": " + esc(v.title) : ""}">
-            ${v.cover ? `<img src="${esc(v.cover)}" alt="" referrerpolicy="no-referrer">` : ""}${PLAY}${v.duration ? `<span class="dur">${esc(v.duration)}</span>` : ""}</button>`
+            ${v.cover ? `<img src="${esc(v.cover)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}${PLAY}${v.duration ? `<span class="dur">${esc(v.duration)}</span>` : ""}</button>`
           : `<a class="vcover" href="https://vk.ru/video${esc(v.id)}" target="_blank" rel="noopener" aria-label="Смотреть видео в ВКонтакте">
-            ${v.cover ? `<img src="${esc(v.cover)}" alt="" referrerpolicy="no-referrer">` : ""}${PLAY}${v.duration ? `<span class="dur">${esc(v.duration)}</span>` : ""}</a>`}
+            ${v.cover ? `<img src="${esc(v.cover)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}${PLAY}${v.duration ? `<span class="dur">${esc(v.duration)}</span>` : ""}</a>`}
         ${v.title ? `<div class="vtitle">${esc(v.title)}</div>` : ""}
       </div>`).join("")}
       ${n ? `<div class="carousel">
@@ -559,6 +562,3 @@ fetch("data/posts.json").then(r => r.json()).then(data => {
   view.innerHTML = `<div class="loading">Не удалось загрузить посты. Обновите страницу.</div>`;
 });
 </script>
-
-</body>
-</html>
