@@ -163,6 +163,7 @@ NUMBER_TAG = re.compile(r"(?<![\w&#/])#(\d+)")  # «трамвая #250» is a n
 def build(r, text, archive):
     text = SWEAR.sub(lambda m: m.group(0)[0] + "…", text)
     text = NUMBER_TAG.sub("№\u00a0\\1", text)
+    text = re.sub(r"(?<=[А-Яа-яЁё])#(\d+)", " №\u00a0\\1", text)  # «Маршрут#1»
     text = MENTION.sub(unmention, text.replace("\r", "").strip())
     text = MARK.sub(lambda m: f"⟦{resolve(m.group(1))}|{m.group(2)}⟧", text)
     paras = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
