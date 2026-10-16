@@ -367,7 +367,7 @@ const PLAY = `<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><pa
 function itemHtml(p, lead) {
   const ph = p.photos[0], v = (p.videos || [])[0];
   let pic;
-  if (ph) pic = lead ? imgTag(ph, "thumb", true) : `<img class="thumb" src="${esc(ph.thumb || ph.full)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+  if (ph) pic = lead ? imgTag(ph, "thumb", true) : `<img class="thumb" src="${esc(ph.thumb || ph.full)}" alt="" loading="lazy" referrerpolicy="no-referrer"${ph.thumb && ph.full ? ` onerror="this.onerror=null;this.src='${esc(ph.full)}'"` : ""}>`;
   else if (v && v.cover) pic = `<img class="thumb" src="${esc(v.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="${COVER_FB}">`;
   else pic = `<div class="nophoto">${v ? "Видео" : "Текст"}</div>`;
   pic = `<div class="pic">${pic}${v ? PLAY + (v.duration ? `<span class="dur">${esc(v.duration)}</span>` : "") : ""}</div>`;
