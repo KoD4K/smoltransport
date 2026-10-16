@@ -92,7 +92,7 @@ def resolve(href):
         q = parse_qs(urlparse(href).query)
         href = unquote(q.get("to", [href])[0])
     m = re.search(r"wall-102293762_(\d+)", href)
-    if m and m.group(1) in site_ids:
+    if m and m.group(1) in site_ids and not re.search(r"[?&](reply|thread)=", href):  # a link to a comment stays on VK
         return "#p" + m.group(1)
     if href.startswith("/"):
         href = "https://vk.ru" + href
