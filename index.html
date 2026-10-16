@@ -372,6 +372,7 @@ const RUBRICS = [
   ["ремонтРельсов", "Ремонт рельсов"], ["простойТрамвая", "Простой трамвая"], ["простойТроллейбуса", "Простой троллейбуса"],
   ["простоСломалась", "Сломалась"], ["расписание", "Расписание"], ["остановка", "Остановки"], ["выделенка", "Выделенки"],
   ["благоустройство", "Благоустройство"], ["стоимостьПроезда", "Стоимость проезда"], ["оплатаПроезда", "Оплата проезда"],
+  ["подвижнойСостав", "Подвижной состав"], ["транспортнаяРеформа", "Транспортная реформа"],
   ["обещание", "Обещания"], ["официальныйОтвет", "Официальные ответы"], ["слухи", "Слухи"], ["ретро", "Ретро"],
   ["неСмоленское", "Не про Смоленск"]
 ];
@@ -393,7 +394,17 @@ const lower = s => s.toLowerCase();
 const norm = s => s.toLowerCase().replace(/ё/g, "е");
 const feedable = c => !c.archive && !c.nofeed;  // untitled video-only posts open as pages but stay out of the feed
 const chev = (dir, size) => `<svg viewBox="0 0 24 24" ${size ? `width="${size}" height="${size}"` : ""} fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${dir < 0 ? '<path d="M15 5l-7 7 7 7"/>' : '<path d="M9 5l7 7-7 7"/>'}</svg>`;
-const tagsHtml = t => t.length ? `<div class="tags">${t.map(x => `<span>${esc(x.replace(/^#/, ""))}</span>`).join("")}</div>` : "";
+// only the group's permanent rubrics and street/route tags are shown; old one-off tags («#дурдом») stay searchable but hidden
+let SHOWN = null;
+const shownTag = t => {
+  SHOWN = SHOWN || new Set(RUBRICS.map(([k]) => lower(k)));
+  const k = lower(t.replace(/^#/, ""));
+  return SHOWN.has(k) || /^(улица|маршрут)./.test(k);
+};
+const tagsHtml = (t, max) => {
+  t = t.filter(shownTag).slice(0, max || t.length);
+  return t.length ? `<div class="tags">${t.map(x => `<span>${esc(x.replace(/^#/, ""))}</span>`).join("")}</div>` : "";
+};
 const MARK = /⟦([^|⟧]+)\|([^⟧]*)⟧/g;
 const unmark = s => s.replace(MARK, "$2");
 function plainRich(s) {
@@ -514,7 +525,7 @@ function itemHtml(p, lead) {
         <div class="meta"><span>${human(p.date)}</span>${p.np > 1 ? `<span>${p.np} фото</span>` : ""}${p.nv ? `<span>${p.nv > 1 ? p.nv + " видео" : "видео"}</span>` : ""}</div>
         <h2 class="item-title${p.title.length > 70 ? " long" : ""}">${esc(p.title)}</h2>
         ${p.lede ? `<p class="item-lede">${esc(p.lede)}</p>` : ""}
-        ${tagsHtml(p.tags.slice(0, 5))}
+        ${tagsHtml(p.tags, 5)}
       </div>
     </a>`;
 }

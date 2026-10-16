@@ -37,7 +37,8 @@ rows = [r for r in rows if not HIDE.get(r["id"], {}).get("post")]  # whole posts
 arch = [a for a in arch if not HIDE.get(a["id"], {}).get("post")]
 site_ids = {r["id"] for r in rows if r["text"].strip() or r["photos"] or rich.get(r["id"], "").strip() or videos.get(r["id"])} | {a["id"] for a in arch}
 
-GREET = re.compile(r"^(доброе утро|доброго утра|добрый день|доброго дня|добрый вечер|доброго вечера|доброй ночи|спокойной ночи)\b", re.I)
+GREET = re.compile(r"^[\"«]?(доброе утро|доброго утра|добрый день|доброго дня|добрый вечер|доброго вечера|доброй ночи|спокойной ночи|"
+                   r"здравствуйте|здравствуй|приветствую|привет|доброго времени суток)\b", re.I)
 TAGS_ONLY = re.compile(r"^(рубрик[аи]:\s*)?(#\S+[\s,]*)+$", re.I)
 MARK = re.compile(r"⟦([^|⟧]+)\|([^⟧]*)⟧")
 # VK mentions «@id837561370 (Patron-67 )» and «[id1|Имя]» read as noise on the site: keep the name, linked like VK does
@@ -79,6 +80,7 @@ def strip_lead(s):
 def plain(s):
     s = MARK.sub(lambda m: m.group(2), s)
     s = strip_lead(s.strip())
+    s = re.sub(r"^(?:upd|апд|обновлено)\b\s*[:.]?\s*", "", s, flags=re.I)  # «UPD: движение восстановлено» is still the news
     s = re.sub(r"\(?https?://\S+\)?", "", s.replace("\n", " "))
     s = re.sub(r"#([\wё]+)", untag, s)
     s = re.sub(r"\s{2,}", " ", s).strip()
@@ -112,7 +114,10 @@ ABBR_DOT = re.compile(r"(?:\b(?:ул|пр|пер|мкр|пос|г|гг|д|им|�
 def headline(s):
     """A sentence as a headline: no final period, unless it ends an abbreviation («2026 г.»)."""
     s = plain(s)
-    return s[:-1] if s.endswith(".") and not s.endswith("..") and not ABBR_DOT.search(s) else s
+    s = s[:-1] if s.endswith(".") and not s.endswith("..") and not ABBR_DOT.search(s) else s
+    if re.search(r'(?:^|[\s(])"[^"\s][^"]*$', s):  # «…троллейбуса "Горожанин»: the closing quote went with the rest
+        s += '"'
+    return s + "»" * (s.count("«") - s.count("»"))
 
 
 def first_sentence(p):
@@ -151,11 +156,13 @@ def unmention(m):
 
 
 # swear words are not for a 12+ site (436-ФЗ allows them from 16+): the word keeps its first letter, «г…»
-SWEAR = re.compile(r"(?<![а-яё])(?:мудак|мудач|говн|жоп)[а-яё]*", re.I)
+SWEAR = re.compile(r"(?<![а-яё])(?:мудак|мудач|говн|жоп|рукожоп)[а-яё]*", re.I)
+NUMBER_TAG = re.compile(r"(?<![\w&#/])#(\d+)")  # «трамвая #250» is a number, not a rubric
 
 
 def build(r, text, archive):
     text = SWEAR.sub(lambda m: m.group(0)[0] + "…", text)
+    text = NUMBER_TAG.sub("№\u00a0\\1", text)
     text = MENTION.sub(unmention, text.replace("\r", "").strip())
     text = MARK.sub(lambda m: f"⟦{resolve(m.group(1))}|{m.group(2)}⟧", text)
     paras = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
@@ -182,6 +189,10 @@ def build(r, text, archive):
     else:
         p0 = paras[0]
         sent, rest = first_sentence(p0)
+        if rest.strip() and len(plain(sent)) < 40 and GREET.match(plain(sent)):  # «"Здравствуйте! Пишу вам…» — the letter starts after it
+            p0 = rest.strip()
+            paras = [p0] + paras[1:]
+            sent, rest = first_sentence(p0)
         if len(plain(p0)) <= 110 and ("\n" not in p0 or not rest.strip()):
             title, body, dropped = headline(p0), paras[1:], p0  # a short first paragraph is the headline itself
         elif len(plain(sent)) <= 110:
