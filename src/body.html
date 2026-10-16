@@ -11,6 +11,7 @@
     </a>
     <nav class="main" aria-label="Разделы">
       <a href="#" data-nav="feed">Материалы</a>
+      <a href="#raspisanie" data-nav="raspisanie">Расписание</a>
       <a href="#zaprosy" data-nav="zaprosy">Запросы и ответы</a>
       <a href="#redakciya" data-nav="redakciya">О редакции</a>
     </nav>
@@ -426,6 +427,121 @@ function countView(id) {
   }).catch(() => {});
 }
 
+// timetables from muttp.ru, re-read on our server every night into data/schedule.json; times are Moscow time
+const KINDS = { tram: ["Трамваи", "трамвай"], trolleybus: ["Троллейбусы", "троллейбус"], bus: ["Автобусы", "автобус"] };
+const DAYS = [["workdays", "Будни"], ["weekends", "Выходные"]];
+const WEEKDAYS = ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"];
+const sched = { kind: "", route: "", day: "" };
+let SCHED = null, schedTimer = null;
+function moscowNow() {
+  const parts = {};
+  new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Moscow", hourCycle: "h23", weekday: "short", hour: "2-digit", minute: "2-digit" })
+    .formatToParts(new Date()).forEach(x => { parts[x.type] = x.value; });
+  const h = +parts.hour % 24, m = +parts.minute;
+  return { min: h * 60 + m, wd: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(parts.weekday), hm: `${String(h).padStart(2, "0")}:${parts.minute}` };
+}
+const dayOf = wd => wd >= 5 ? "weekends" : "workdays";
+const minsOf = t => { const [h, m] = t.split(":").map(Number); return (h < 3 ? h + 24 : h) * 60 + m; };
+const msk = iso => new Date(iso).toLocaleString("ru-RU", { timeZone: "Europe/Moscow", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).replace(" в ", ", ");
+const inMin = d => d < 60 ? `через ${d} ${plural(d, "минуту", "минуты", "минут")}` : `через ${Math.floor(d / 60)} ч ${d % 60} мин`;
+function routeName(r) {
+  const d = r.directions[0];
+  return d ? `${d.stop} — ${d.towards}` : "";
+}
+// the usual gap between trams in the daytime (10:00–16:00), so a reader sees how often they run
+function dayGap(list) {
+  const m = list.map(x => minsOf(x.t)).filter(v => v >= 600 && v <= 960);
+  const gaps = m.slice(1).map((v, i) => v - m[i]).filter(g => g > 0).sort((a, b) => a - b);
+  return gaps.length ? gaps[gaps.length >> 1] : 0;
+}
+function dirHtml(d, now, today, tomorrowFirst) {
+  const list = d.days[sched.day] || [];
+  if (!list.length) return "";
+  const live = today && now.min >= 180;
+  const next = live ? list.filter(x => minsOf(x.t) >= now.min) : [];
+  const nextT = next.length ? next[0].t : "";
+  let soon = "";
+  if (today && next.length) {
+    soon = `<div class="soon"><span class="soon-l">Ближайшие</span>${next.slice(0, 3).map((x, k) =>
+      `<span class="soon-t${k ? "" : " first"}"><b>${x.t}</b>${k ? "" : `<small>${minsOf(x.t) === now.min ? "сейчас" : inMin(minsOf(x.t) - now.min)}</small>`}</span>`).join("")}</div>`;
+  } else if (today) {
+    soon = `<div class="soon"><span class="soon-l">${live ? "Сегодня рейсов больше нет" : KINDS[sched.kind][0] + " сейчас не ходят"}</span><span class="soon-t first"><b>${live ? tomorrowFirst(d) : list[0].t}</b><small>${live ? "первый завтра" : "первый утром"}</small></span></div>`;
+  }
+  const hours = [];
+  list.forEach(x => {
+    const h = x.t.slice(0, 2);
+    if (!hours.length || hours[hours.length - 1][0] !== h) hours.push([h, []]);
+    hours[hours.length - 1][1].push(x);
+  });
+  const gap = dayGap(list);
+  return `<section class="dir">
+      <div class="dir-head"><h3>${esc(d.stop)}</h3><span>в сторону ${esc(d.towards)}</span></div>
+      ${soon}
+      <div class="dir-sum">Первый ${list[0].t} · последний ${list[list.length - 1].t}${gap ? ` · днём примерно каждые ${gap} мин` : ""}</div>
+      <div class="hours">${hours.map(([h, xs]) => `<div class="hr"><b>${h}</b><span>${xs.map(x => {
+        const cls = [live && minsOf(x.t) < now.min && "past", x.t === nextT && "next", x.mark === "*" && "sme", x.depot === "in" && "dep"].filter(Boolean).join(" ");
+        return `<i${cls ? ` class="${cls}"` : ""}>${x.t.slice(3)}${x.depot === "in" ? "<sup>д</sup>" : ""}</i>`;
+      }).join("")}</span></div>`).join("")}</div>
+    </section>`;
+}
+function renderSchedule(sub) {
+  setNav("raspisanie");
+  if (!SCHED) {
+    view.innerHTML = `<div class="loading">Загружаем расписание…</div>`;
+    getJSON("data/schedule.json").then(d => { SCHED = d; if (location.hash.startsWith("#raspisanie")) renderSchedule(sub); },
+      () => { if (location.hash.startsWith("#raspisanie")) view.innerHTML = `<div class="empty">Не удалось загрузить расписание. Обновите страницу.</div>`; });
+    return;
+  }
+  const kinds = Object.keys(KINDS).filter(k => SCHED.kinds[k] && SCHED.kinds[k].routes.length);
+  if (!kinds.length) { view.innerHTML = `<div class="empty">Расписание пока не загружено.</div>`; return; }
+  const [subKind, subRoute] = (sub || "").split("-");
+  if (kinds.includes(subKind)) sched.kind = subKind;
+  if (!kinds.includes(sched.kind)) sched.kind = kinds[0];
+  const K = SCHED.kinds[sched.kind];
+  if (subRoute && K.routes.some(r => r.route === subRoute)) sched.route = subRoute;
+  if (!K.routes.some(r => r.route === sched.route)) {
+    let saved = "";
+    try { saved = localStorage.getItem("route-" + sched.kind) || ""; } catch (e) {}
+    sched.route = K.routes.some(r => r.route === saved) ? saved : K.routes[0].route;
+  }
+  const now = moscowNow(), todayDay = dayOf(now.wd);
+  if (!sched.day) sched.day = todayDay;
+  const R = K.routes.find(r => r.route === sched.route);
+  const today = sched.day === todayDay;
+  const tomorrowDay = dayOf((now.wd + 1) % 7);
+  const tomorrowFirst = d => ((d.days[tomorrowDay] || [])[0] || {}).t || "—";
+  const notes = Object.entries(K.notes || {}).filter(([k]) => k === "*");
+  view.innerHTML = `
+    <div class="eyebrow">Расписание</div>
+    <h1 class="page-title" style="margin-top:8px">Когда придёт ${KINDS[sched.kind][1]}</h1>
+    <p class="lead-text">Время отправления на контрольных остановках по расписанию МУТТП. Сейчас в Смоленске ${now.hm}, ${WEEKDAYS[now.wd]}.</p>
+    ${kinds.length > 1 ? `<div class="chips kinds" role="group" aria-label="Вид транспорта">${kinds.map(k =>
+      `<button class="chip" data-kind="${k}" aria-pressed="${k === sched.kind}">${KINDS[k][0]}</button>`).join("")}</div>` : ""}
+    <div class="routes" role="group" aria-label="Маршрут">${K.routes.map(r =>
+      `<button class="rbtn" data-route="${esc(r.route)}" aria-pressed="${r.route === sched.route}"><span class="rnum">${esc(r.route)}</span><span class="rname">${esc(routeName(r))}</span></button>`).join("")}</div>
+    <div class="route-title">Маршрут ${esc(R.route)}: ${esc(routeName(R))}</div>
+    <div class="chips days" role="group" aria-label="Дни">${DAYS.map(([k, label]) =>
+      `<button class="chip" data-day="${k}" aria-pressed="${k === sched.day}">${label}${k === todayDay ? " · сегодня" : ""}</button>`).join("")}</div>
+    ${K.error ? `<p class="sched-warn">Последняя проверка сайта МУТТП не удалась, показано расписание от ${msk(K.parsed_at)}.</p>`
+      : Date.now() - new Date(K.checked_at) > 3 * 864e5 ? `<p class="sched-warn">Расписание не проверялось с ${msk(K.checked_at)}, сверьтесь с сайтом МУТТП.</p>` : ""}
+    <div class="dirs">${R.directions.map(d => dirHtml(d, now, today, tomorrowFirst)).join("")}</div>
+    <div class="legend">
+      ${notes.length ? `<span><i class="sme">15</i> ${esc(notes[0][1])}: сцепка из двух вагонов</span>` : ""}
+      <span><i class="dep">15<sup>д</sup></i> рейс в депо</span>
+    </div>
+    <p class="sched-src">Источник: <a href="${esc(K.source_url)}" target="_blank" rel="noopener">сайт МУТТП</a>. Проверено ${msk(K.checked_at)}${K.changed_at && new Date(K.checked_at) - new Date(K.changed_at) > 864e5 ? `, там оно не менялось с ${msk(K.changed_at).replace(/,.*/, "")}` : ""}.
+      На остальных остановках ${KINDS[sched.kind][1]} проходит раньше или позже, на время в пути. Праздничные дни МУТТП отдельно не указывает.</p>`;
+  view.querySelectorAll("[data-kind]").forEach(b => b.addEventListener("click", () => { sched.kind = b.dataset.kind; sched.route = ""; renderSchedule(); }));
+  view.querySelectorAll("[data-route]").forEach(b => b.addEventListener("click", () => {
+    sched.route = b.dataset.route;
+    try { localStorage.setItem("route-" + sched.kind, sched.route); } catch (e) {}
+    renderSchedule();
+  }));
+  view.querySelectorAll("[data-day]").forEach(b => b.addEventListener("click", () => { sched.day = b.dataset.day; renderSchedule(); }));
+  clearInterval(schedTimer);
+  schedTimer = setInterval(() => { if (location.hash.startsWith("#raspisanie")) renderSchedule(); else clearInterval(schedTimer); }, 30000);
+}
+
 function renderRequests() {
   setNav("zaprosy");
   view.innerHTML = `
@@ -496,6 +612,7 @@ function route() {
     }
     window.scrollTo(0, 0);
   }
+  else if (h === "raspisanie" || h.startsWith("raspisanie/")) { const again = lastHash.startsWith("raspisanie"); renderSchedule(h.split("/")[1]); if (!again) window.scrollTo(0, 0); }
   else if (h === "zaprosy") { renderRequests(); window.scrollTo(0, 0); }
   else if (h === "redakciya") { renderAbout(); window.scrollTo(0, 0); }
   else { renderFeed(); if (lastHash.startsWith("p")) window.scrollTo(0, state.scrollY); }

@@ -115,3 +115,53 @@ nav.main { margin-left: auto; }
 /* the feed waits for a search or an older year: keep the old cards, dimmed */
 .feed.busy { opacity: .45; transition: opacity .2s; }
 .empty a { display: block; margin-top: 10px; color: var(--accent); font-weight: 600; }
+
+/* «Расписание»: route buttons, then one card per control stop with the next trams and the day by hours */
+.routes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-top: 22px; }
+.rbtn { display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; font: 500 0.9375rem/1.3 var(--body); }
+.rbtn:hover { border-color: var(--muted); }
+.rbtn .rnum { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--surface-2); font: italic 800 1.375rem/1 var(--display); }
+.rbtn[aria-pressed="true"] { border-color: var(--accent); background: var(--surface); }
+.rbtn[aria-pressed="true"] .rnum { background: var(--accent); color: var(--accent-ink); }
+.chips.days, .chips.kinds { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.dirs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; margin-top: 22px; }
+.dir { background: var(--surface); border-radius: 14px; padding: 16px 16px 12px; min-width: 0; }
+.dir-head h3 { margin: 0; font: 700 var(--step-1)/1.25 var(--display); }
+.dir-head span { color: var(--muted); font-size: 0.9375rem; }
+.soon { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
+.soon-l { width: 100%; color: var(--muted); font-size: var(--step--1); }
+.soon-t b { font: 700 1.25rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.soon-t.first b { color: var(--accent); font-size: 1.5rem; }
+.soon-t small { margin-left: 6px; color: var(--muted); font-size: var(--step--1); }
+.dir-sum { margin-top: 10px; color: var(--muted); font-size: var(--step--1); }
+.hours { margin-top: 10px; border-top: 1px solid var(--line); }
+.hr { display: flex; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.hr:last-child { border-bottom: 0; }
+.hr b { flex: none; width: 2ch; font: 700 1rem/1.6 var(--display); font-variant-numeric: tabular-nums; }
+.hr span { display: flex; flex-wrap: wrap; gap: 2px 4px; }
+.hours i, .legend i { font-style: normal; font-variant-numeric: tabular-nums; line-height: 1.6; padding: 0 5px; border-radius: 6px; }
+.hours i.past { color: var(--muted); opacity: .55; }
+.hours i.next { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.hours i.sme, .legend i.sme { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.hours i.dep, .legend i.dep { color: var(--muted); }
+.hours sup, .legend sup { font-size: 0.7em; margin-left: 1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; color: var(--muted); font-size: var(--step--1); }
+.legend i { color: var(--fg); margin-right: 4px; }
+.sched-src { color: var(--muted); font-size: var(--step--1); max-width: 70ch; margin-top: 14px; }
+.sched-src a { color: var(--accent); }
+.sched-warn { color: var(--wait); margin-top: 14px; }
+.hours i.next.dep { color: var(--accent-ink); }
+.route-title { display: none; }
+@media (max-width: 720px) {
+  .routes { display: flex; gap: 8px; }
+  .rbtn { padding: 6px; border-radius: 12px; }
+  .rbtn .rname { display: none; }
+  .route-title { display: block; margin-top: 10px; font-weight: 600; }
+  .dir { padding: 14px 12px 10px; }
+}
+/* four sections and a search field do not fit next to the logo: search is an icon at the top right that opens a full-width field */
+nav.main { gap: 2px; }
+nav.main a { padding: 7px 11px; }
+.hs-toggle { display: grid; }
+.hs-field { display: none; order: 3; width: 100%; }
+header.mast.searching .hs-field { display: block; }
