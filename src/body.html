@@ -1,0 +1,273 @@
+<div class="proto"><div class="wrap"><b>Прототип</b><span>Тестовая версия сайта для обратной связи. Материалы — посты со стены группы ВКонтакте за 2026 год, в том виде, как они вышли.</span></div></div>
+
+<header class="mast">
+  <div class="wrap">
+    <a class="brand" href="#">
+      <img src="media/logo.png" alt="Логотип «Смоленского транспорта»">
+      <div>
+        <div class="brand-name">Смоленский транспорт</div>
+        <div class="brand-sub">О трамваях, троллейбусах и автобусах Смоленска</div>
+      </div>
+    </a>
+    <nav class="main" aria-label="Разделы">
+      <a href="#" data-nav="feed">Материалы</a>
+      <a href="#zaprosy" data-nav="zaprosy">Запросы и ответы</a>
+      <a href="#redakciya" data-nav="redakciya">О редакции</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="view"><div class="loading">Загружаем посты…</div></main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span class="age">16+</span>
+    <span>«Смоленский транспорт», 2026. Тестовая версия сайта.</span>
+    <span>Обсуждение материалов в <a href="https://vk.ru/smolensk_transport" target="_blank" rel="noopener">группе ВКонтакте</a></span>
+  </div>
+</footer>
+
+<script>
+const PAGE = 20;
+const RUBRICS = [
+  ["трамвай", "Трамвай"], ["троллейбус", "Троллейбус"], ["автобус", "Автобус"], ["жд", "Железная дорога"], ["авиа", "Авиа"],
+  ["намПишут", "Нам пишут"], ["ДТП", "ДТП"], ["обновление", "Обновление парка"], ["бу", "Б/у вагоны"],
+  ["ремонтРельсов", "Ремонт рельсов"], ["простойТрамвая", "Простой трамвая"], ["простойТроллейбуса", "Простой троллейбуса"],
+  ["простоСломалась", "Сломалась"], ["расписание", "Расписание"], ["остановка", "Остановки"], ["выделенка", "Выделенки"],
+  ["благоустройство", "Благоустройство"], ["стоимостьПроезда", "Стоимость проезда"], ["оплатаПроезда", "Оплата проезда"],
+  ["обещание", "Обещания"], ["официальныйОтвет", "Официальные ответы"], ["слухи", "Слухи"], ["ретро", "Ретро"],
+  ["неСмоленское", "Не про Смоленск"]
+];
+const MONTHS = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+const MONTHS_N = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const view = document.getElementById("view");
+let POSTS = [], BYID = {}, CHIPS = [];
+const state = { filter: null, q: "", shown: PAGE, scrollY: 0 };
+let observer = null;
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const human = d => { const [y, m, day] = d.split("-").map(Number); return `${day} ${MONTHS[m - 1]} ${y}`; };
+const lower = s => s.toLowerCase();
+const chev = (dir, size) => `<svg viewBox="0 0 24 24" ${size ? `width="${size}" height="${size}"` : ""} fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${dir < 0 ? '<path d="M15 5l-7 7 7 7"/>' : '<path d="M9 5l7 7-7 7"/>'}</svg>`;
+const tagsHtml = t => t.length ? `<div class="tags">${t.map(x => `<span>${esc(x.replace(/^#/, ""))}</span>`).join("")}</div>` : "";
+function richText(s) {
+  return esc(s)
+    .replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https?:\/\/(www\.)?/, "")}</a>`)
+    .replace(/(^|[\s(«"])#([\wА-Яа-яЁё]+)/g, '$1<span class="ht">#$2</span>');
+}
+function imgTag(ph, cls, eager, alt = "") {
+  const src = ph.full || ph.thumb;
+  const fb = ph.thumb && ph.full ? ` onerror="this.onerror=null;this.src='${ph.thumb}'"` : "";
+  return `<img class="${cls}" src="${esc(src)}" alt="${esc(alt)}" referrerpolicy="no-referrer" loading="${eager ? "eager" : "lazy"}"${fb}>`;
+}
+function setNav(key) {
+  document.querySelectorAll("[data-nav]").forEach(a => a.dataset.nav === key ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+}
+function matches(p) {
+  if (state.filter && !p._tags.includes(lower(state.filter))) return false;
+  if (state.q && !p._hay.includes(state.q)) return false;
+  return true;
+}
+
+function itemHtml(p, lead) {
+  const ph = p.photos[0];
+  const pic = ph ? (lead ? imgTag(ph, "thumb", true) : `<img class="thumb" src="${esc(ph.thumb || ph.full)}" alt="" loading="lazy" referrerpolicy="no-referrer">`)
+                 : `<div class="nophoto">Текст</div>`;
+  const lede = p.body[0] && p.body[0] !== p.title ? p.body[0] : "";
+  return `<a class="item${lead ? " lead" : ""}" href="#p${p.id}">
+      ${pic}
+      <div class="item-body">
+        <div class="meta"><span>${human(p.date)}</span>${p.photos.length > 1 ? `<span>${p.photos.length} фото</span>` : ""}</div>
+        <h2 class="item-title${p.title.length > 70 ? " long" : ""}">${esc(p.title)}</h2>
+        ${lede ? `<p class="item-lede">${esc(lede.length > 240 ? lede.slice(0, 240).replace(/\s\S*$/, "") + "…" : lede)}</p>` : ""}
+        ${tagsHtml(p.tags.slice(0, 5))}
+      </div>
+    </a>`;
+}
+
+function renderList() {
+  const list = POSTS.filter(matches);
+  const feed = document.getElementById("feed");
+  const more = document.getElementById("more");
+  const stats = document.getElementById("stats");
+  stats.textContent = state.filter || state.q ? `Найдено: ${list.length}` : `${list.length} постов с 1 января по ${human(POSTS[0].date)}`;
+  let html = "", month = "";
+  list.slice(0, state.shown).forEach((p, i) => {
+    const m = p.date.slice(0, 7);
+    const lead = i === 0 && !state.filter && !state.q;
+    if (m !== month && !lead) html += `<div class="month">${MONTHS_N[+m.slice(5) - 1]} ${m.slice(0, 4)}</div>`;
+    if (lead || m !== month) month = m;
+    html += itemHtml(p, lead);
+  });
+  feed.innerHTML = html || `<div class="empty">Ничего не нашлось. Попробуйте другое слово или рубрику.</div>`;
+  const left = list.length - state.shown;
+  more.innerHTML = left > 0 ? `<button id="more-btn">Показать ещё ${Math.min(PAGE, left)}</button><small>Осталось ${left}</small>` : "";
+  if (left > 0) {
+    document.getElementById("more-btn").addEventListener("click", loadMore);
+    if (observer) observer.disconnect();
+    observer = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) loadMore(); }, { rootMargin: "600px 0px" });
+    observer.observe(more);
+  } else if (observer) observer.disconnect();
+}
+function loadMore() { state.shown += PAGE; renderList(); }
+
+function renderFeed() {
+  setNav("feed");
+  view.innerHTML = `
+    <div class="feed-head">
+      <div class="eyebrow">Материалы</div>
+      <label class="search" for="q">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Поиск по постам: Кашена, маршрут 20, 71-623…" value="${esc(state.q)}" autocomplete="off" aria-label="Поиск по постам">
+      </label>
+      <div class="chips" role="group" aria-label="Рубрики">
+        <button class="chip" id="f-all" aria-pressed="${!state.filter}" data-f="">Все</button>
+        ${CHIPS.map(([k, label]) => `<button class="chip" id="f-${k}" aria-pressed="${state.filter === k}" data-f="${k}">${label}</button>`).join("")}
+      </div>
+      <div class="feed-stats" id="stats"></div>
+    </div>
+    <div class="feed" id="feed"></div>
+    <div class="more" id="more"></div>`;
+  view.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => {
+    state.filter = b.dataset.f || null; state.shown = PAGE;
+    view.querySelectorAll("[data-f]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    renderList();
+  }));
+  let t;
+  document.getElementById("q").addEventListener("input", e => {
+    clearTimeout(t);
+    t = setTimeout(() => { state.q = lower(e.target.value.trim()); state.shown = PAGE; renderList(); }, 200);
+  });
+  renderList();
+}
+
+function renderPost(p) {
+  setNav("feed");
+  const n = p.photos.length;
+  const i = POSTS.indexOf(p), newer = POSTS[i - 1], older = POSTS[i + 1];
+  view.innerHTML = `
+    <a class="back" href="#">${chev(-1, 16)} Все материалы</a>
+    <article>
+      <div class="article-head">
+        <div class="meta"><span>${human(p.date)}, ${esc(p.time)}</span></div>
+        <h1 class="page-title${p.title.length > 70 ? " long" : ""}">${esc(p.title)}</h1>
+      </div>
+      ${n ? `<div class="carousel">
+        <div class="track" id="track" tabindex="0" aria-label="Фото поста">
+          ${p.photos.map((ph, k) => `<div class="slide">${imgTag(ph, "", k === 0, `Фото ${k + 1} из ${n}`)}</div>`).join("")}
+        </div>
+        ${n > 1 ? `<div class="cbar">
+          <span class="counter" id="counter"><em>1</em> / ${n}</span>
+          <div class="cbtns">
+            <button class="cbtn" id="prev" aria-label="Предыдущее фото">${chev(-1)}</button>
+            <button class="cbtn" id="next" aria-label="Следующее фото">${chev(1)}</button>
+          </div>
+        </div>` : ""}
+      </div>` : ""}
+      <div class="text">${p.body.map(t => `<p>${richText(t)}</p>`).join("")}</div>
+      <div class="article-foot">
+        ${tagsHtml(p.tags)}
+        ${p.links.length ? `<div class="linklist"><span class="src">Ссылки из поста</span>${p.links.map(l => `<a href="${esc(l.href)}"${l.pid ? "" : ' target="_blank" rel="noopener"'}>${esc(l.label)}</a>`).join("")}</div>` : ""}
+        <a class="vk-link" href="${esc(p.url)}" target="_blank" rel="noopener">Обсудить в группе ВКонтакте ${chev(1, 16)}</a>
+      </div>
+      <nav class="pager" aria-label="Соседние посты">
+        ${newer ? `<a href="#p${newer.id}"><small>Новее · ${human(newer.date)}</small><span>${esc(newer.title)}</span></a>` : ""}
+        ${older ? `<a class="next" href="#p${older.id}"><small>Раньше · ${human(older.date)}</small><span>${esc(older.title)}</span></a>` : ""}
+      </nav>
+    </article>`;
+  if (n > 1) {
+    const track = document.getElementById("track"), counter = document.getElementById("counter");
+    const prev = document.getElementById("prev"), next = document.getElementById("next");
+    const idx = () => Math.round(track.scrollLeft / track.clientWidth);
+    const go = k => track.scrollTo({ left: k * track.clientWidth, behavior: "smooth" });
+    const sync = () => { const k = idx(); counter.innerHTML = `<em>${k + 1}</em> / ${n}`; prev.disabled = k === 0; next.disabled = k === n - 1; };
+    prev.addEventListener("click", () => go(idx() - 1));
+    next.addEventListener("click", () => go(idx() + 1));
+    track.addEventListener("scroll", () => requestAnimationFrame(sync), { passive: true });
+    track.addEventListener("keydown", e => { if (e.key === "ArrowRight") { e.preventDefault(); go(idx() + 1); } if (e.key === "ArrowLeft") { e.preventDefault(); go(idx() - 1); } });
+    sync();
+  }
+}
+
+function renderRequests() {
+  setNav("zaprosy");
+  view.innerHTML = `
+    <div class="eyebrow">Запросы и ответы</div>
+    <h1 class="page-title" style="margin-top:8px">Что мы спросили у властей</h1>
+    <p class="lead-text">Здесь будут все запросы редакции в администрацию города, областной Минтранс и МУТТП. Ответы публикуем целиком, со сканом, и отмечаем, если срок ответа нарушен.</p>
+    <section class="section">
+      <h2>Почему это быстрее</h2>
+      <div class="compare">
+        <div><span class="big">30 дней</span><span>Ответ на обращение гражданина</span><small>Закон № 59-ФЗ, ст. 12. Срок можно продлить ещё на 30 дней.</small></div>
+        <div><span class="big hl">7 дней</span><span>Ответ на запрос редакции СМИ</span><small>Закон «О СМИ», ст. 39–40. Об отказе или отсрочке орган сообщает за 3 дня.</small></div>
+      </div>
+    </section>
+    <section class="section">
+      <h2>Отправленные обращения</h2>
+      <p class="prose" style="color:var(--muted);margin:0 0 14px">Пока издание не зарегистрировано, члены редакции отправляют вопросы как граждане.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>№</th><th>Тема</th><th>Кому</th><th>Отправлено</th><th>Статус</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td>Мост и ул. Кашена</td><td>Министерство транспорта и дорожного хозяйства Смоленской области</td><td class="date">16.10.2026</td><td><span class="pill wait">Ждём ответ</span></td></tr>
+            <tr><td class="num">3</td><td>Бесхозяйные трамвайные остановки</td><td>Управление транспорта и дорожного хозяйства администрации города</td><td class="date">15.10.2026</td><td><span class="pill wait">Ждём ответ до 14.11</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>`;
+}
+
+function renderAbout() {
+  setNav("redakciya");
+  view.innerHTML = `
+    <div class="eyebrow">О редакции</div>
+    <h1 class="page-title" style="margin-top:8px">Пишем о городском транспорте Смоленска</h1>
+    <p class="lead-text">Проверяем обещания чиновников по датам, считаем вагоны и автобусы, читаем концепции и контракты. Делаем это добровольно, основная площадка пока группа ВКонтакте.</p>
+    <section class="section">
+      <h2>Выходные данные</h2>
+      <dl class="imprint">
+        <dt>Наименование</dt><dd>Сетевое издание «Смоленский транспорт» <span class="blank">(рабочее название)</span></dd>
+        <dt>Учредитель</dt><dd class="blank">Фамилия Имя Отчество</dd>
+        <dt>Главный редактор</dt><dd class="blank">Фамилия Имя Отчество</dd>
+        <dt>Электронная почта редакции</dt><dd class="blank">адрес на домене сайта</dd>
+        <dt>Телефон редакции</dt><dd class="blank">номер телефона</dd>
+        <dt>Регистрация</dt><dd>Запись в реестре СМИ <span class="blank">ЭЛ № … от …</span>, выдана Роскомнадзором</dd>
+        <dt>Знак информационной продукции</dt><dd><span class="age">16+</span></dd>
+      </dl>
+    </section>
+    <section class="section">
+      <h2>Как мы работаем</h2>
+      <div class="prose">
+        <p>Факты подтверждаем независимыми источниками: документами, официальными сайтами, местными СМИ. Источники указываем на последней карточке каждого материала.</p>
+        <p>Фотографии подписываем именем автора. Если фото взято с transphoto.org, так и пишем.</p>
+        <p>Нашли ошибку? Напишите в сообщения группы ВКонтакте. Мы исправим материал и отметим, что именно изменилось.</p>
+      </div>
+    </section>`;
+}
+
+let lastHash = "";
+function route() {
+  const h = location.hash.replace("#", "");
+  if (!lastHash && h) state.scrollY = window.scrollY;
+  const post = h.startsWith("p") && BYID[h.slice(1)];
+  if (post) { renderPost(post); window.scrollTo(0, 0); }
+  else if (h === "zaprosy") { renderRequests(); window.scrollTo(0, 0); }
+  else if (h === "redakciya") { renderAbout(); window.scrollTo(0, 0); }
+  else { renderFeed(); if (lastHash.startsWith("p")) window.scrollTo(0, state.scrollY); }
+  lastHash = h;
+}
+
+fetch("data/posts.json").then(r => r.json()).then(data => {
+  POSTS = data;
+  POSTS.forEach(p => {
+    BYID[p.id] = p;
+    p._tags = p.tags.map(t => lower(t.replace(/^#/, "")));
+    p._hay = lower([p.title, ...p.body, ...p.tags].join(" "));
+  });
+  CHIPS = RUBRICS.filter(([k]) => POSTS.filter(p => p._tags.includes(lower(k))).length >= 5);
+  window.addEventListener("hashchange", route);
+  route();
+}).catch(() => {
+  view.innerHTML = `<div class="loading">Не удалось загрузить посты. Обновите страницу.</div>`;
+});
+</script>
