@@ -40,3 +40,31 @@
   .rubrics::-webkit-scrollbar { display: none; }
   .rubrics .chip { flex: none; }
 }
+.meta .arch { color: var(--accent); }
+.text a.inlink { text-decoration-style: dotted; text-underline-offset: 3px; }
+.pic { position: relative; }
+.play { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; transform: translate(-50%, -50%); border-radius: 50%; background: rgba(20, 22, 26, .72); color: #fff; display: grid; place-items: center; border: 2px solid var(--accent); }
+.play svg { width: 26px; height: 26px; margin-left: 3px; }
+.dur { position: absolute; right: 8px; bottom: 8px; background: rgba(20, 22, 26, .8); color: #fff; font-size: 0.75rem; font-variant-numeric: tabular-nums; padding: 2px 6px; border-radius: 4px; }
+.item:not(.lead) .play { width: 40px; height: 40px; }
+.item:not(.lead) .play svg { width: 18px; height: 18px; }
+.video { max-width: 880px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+.vcover { position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; padding: 0; border-radius: 10px; overflow: hidden; background: var(--surface); cursor: pointer; }
+.vcover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vcover:hover .play { background: var(--accent); color: var(--accent-ink); }
+.vframe { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 10px; background: #000; display: block; }
+.vtitle { color: var(--muted); font-size: var(--step--1); }
+/* compact mobile header */
+@media (max-width: 720px) {
+  .proto .wrap { padding-block: 6px; font-size: 0.75rem; line-height: 1.4; }
+  header.mast .wrap { padding-block: 12px; gap: 10px; }
+  .brand { gap: 10px; }
+  .brand img { width: 40px; }
+  .brand-name { font-size: 1.125rem; }
+  .brand-sub { display: none; }
+  nav.main { width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 4px; }
+  nav.main::-webkit-scrollbar { display: none; }
+  nav.main a { flex: none; padding: 6px 12px; font-size: 0.875rem; }
+  main { padding-block: 20px 48px; }
+  .feed-head { gap: 12px; margin-bottom: 16px; }
+}

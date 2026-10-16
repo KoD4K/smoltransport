@@ -50,10 +50,24 @@ const human = d => { const [y, m, day] = d.split("-").map(Number); return `${day
 const lower = s => s.toLowerCase();
 const chev = (dir, size) => `<svg viewBox="0 0 24 24" ${size ? `width="${size}" height="${size}"` : ""} fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${dir < 0 ? '<path d="M15 5l-7 7 7 7"/>' : '<path d="M9 5l7 7-7 7"/>'}</svg>`;
 const tagsHtml = t => t.length ? `<div class="tags">${t.map(x => `<span>${esc(x.replace(/^#/, ""))}</span>`).join("")}</div>` : "";
-function richText(s) {
+const MARK = /⟦([^|⟧]+)\|([^⟧]*)⟧/g;
+const unmark = s => s.replace(MARK, "$2");
+function plainRich(s) {
   return esc(s)
     .replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https?:\/\/(www\.)?/, "")}</a>`)
     .replace(/(^|[\s(«"])#([\wА-Яа-яЁё]+)/g, '$1<span class="ht">#$2</span>');
+}
+function richText(s) {
+  let html = "", last = 0;
+  for (const m of s.matchAll(MARK)) {
+    html += plainRich(s.slice(last, m.index));
+    const href = m[1], text = m[2] || href;
+    const internal = href.startsWith("#p");
+    const label = text.startsWith("#") ? `<span class="ht">${esc(text)}</span>` : esc(text);
+    html += `<a href="${esc(href)}"${internal ? ' class="inlink"' : ' target="_blank" rel="noopener"'}>${label}</a>`;
+    last = m.index + m[0].length;
+  }
+  return html + plainRich(s.slice(last));
 }
 function imgTag(ph, cls, eager, alt = "") {
   const src = ph.full || ph.thumb;
@@ -71,15 +85,19 @@ function matches(p) {
   return true;
 }
 
+const PLAY = `<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>`;
 function itemHtml(p, lead) {
-  const ph = p.photos[0];
-  const pic = ph ? (lead ? imgTag(ph, "thumb", true) : `<img class="thumb" src="${esc(ph.thumb || ph.full)}" alt="" loading="lazy" referrerpolicy="no-referrer">`)
-                 : `<div class="nophoto">Текст</div>`;
-  const lede = p.body[0] && p.body[0] !== p.title ? p.body[0] : "";
+  const ph = p.photos[0], v = (p.videos || [])[0];
+  let pic;
+  if (ph) pic = lead ? imgTag(ph, "thumb", true) : `<img class="thumb" src="${esc(ph.thumb || ph.full)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+  else if (v && v.cover) pic = `<img class="thumb" src="${esc(v.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+  else pic = `<div class="nophoto">${v ? "Видео" : "Текст"}</div>`;
+  pic = `<div class="pic">${pic}${v ? PLAY + (v.duration ? `<span class="dur">${esc(v.duration)}</span>` : "") : ""}</div>`;
+  const lede = p.body[0] ? unmark(p.body[0]) : "";
   return `<a class="item${lead ? " lead" : ""}" href="#p${p.id}">
       ${pic}
       <div class="item-body">
-        <div class="meta"><span>${human(p.date)}</span>${p.photos.length > 1 ? `<span>${p.photos.length} фото</span>` : ""}</div>
+        <div class="meta"><span>${human(p.date)}</span>${p.photos.length > 1 ? `<span>${p.photos.length} фото</span>` : ""}${p.videos ? `<span>${p.videos.length > 1 ? p.videos.length + " видео" : "видео"}</span>` : ""}</div>
         <h2 class="item-title${p.title.length > 70 ? " long" : ""}">${esc(p.title)}</h2>
         ${lede ? `<p class="item-lede">${esc(lede.length > 240 ? lede.slice(0, 240).replace(/\s\S*$/, "") + "…" : lede)}</p>` : ""}
         ${tagsHtml(p.tags.slice(0, 5))}
@@ -168,14 +186,21 @@ function renderFeed() {
 function renderPost(p) {
   setNav("feed");
   const n = p.photos.length;
-  const i = POSTS.indexOf(p), newer = POSTS[i - 1], older = POSTS[i + 1];
+  const i = POSTS.indexOf(p), newer = i >= 0 ? POSTS[i - 1] : null, older = i >= 0 ? POSTS[i + 1] : null;
   view.innerHTML = `
     <a class="back" href="#">${chev(-1, 16)} Все материалы</a>
     <article>
       <div class="article-head">
-        <div class="meta"><span>${human(p.date)}, ${esc(p.time)}</span></div>
+        <div class="meta"><span>${human(p.date)}, ${esc(p.time)}</span>${p.archive ? `<span class="arch">Из архива группы</span>` : ""}</div>
         <h1 class="page-title${p.title.length > 70 ? " long" : ""}">${esc(p.title)}</h1>
       </div>
+      ${(p.videos || []).map((v, k) => `<div class="video" data-k="${k}">
+        ${v.embed ? `<button class="vcover" type="button" data-embed="${esc(v.embed)}" aria-label="Смотреть видео${v.title ? ": " + esc(v.title) : ""}">
+            ${v.cover ? `<img src="${esc(v.cover)}" alt="" referrerpolicy="no-referrer">` : ""}${PLAY}${v.duration ? `<span class="dur">${esc(v.duration)}</span>` : ""}</button>`
+          : `<a class="vcover" href="https://vk.ru/video${esc(v.id)}" target="_blank" rel="noopener" aria-label="Смотреть видео в ВКонтакте">
+            ${v.cover ? `<img src="${esc(v.cover)}" alt="" referrerpolicy="no-referrer">` : ""}${PLAY}${v.duration ? `<span class="dur">${esc(v.duration)}</span>` : ""}</a>`}
+        ${v.title ? `<div class="vtitle">${esc(v.title)}</div>` : ""}
+      </div>`).join("")}
       ${n ? `<div class="carousel">
         <div class="track" id="track" tabindex="0" aria-label="Фото поста">
           ${p.photos.map((ph, k) => `<div class="slide">${imgTag(ph, "", k === 0, `Фото ${k + 1} из ${n}`)}</div>`).join("")}
@@ -199,6 +224,14 @@ function renderPost(p) {
         ${older ? `<a class="next" href="#p${older.id}"><small>Раньше · ${human(older.date)}</small><span>${esc(older.title)}</span></a>` : ""}
       </nav>
     </article>`;
+  view.querySelectorAll("button.vcover").forEach(btn => btn.addEventListener("click", () => {
+    const src = btn.dataset.embed + (btn.dataset.embed.includes("?") ? "&" : "?") + "autoplay=1";
+    const f = document.createElement("iframe");
+    f.src = src; f.className = "vframe"; f.title = "Видео";
+    f.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock";
+    f.setAttribute("allowfullscreen", ""); f.setAttribute("frameborder", "0");
+    btn.replaceWith(f);
+  }));
   if (n > 1) {
     const track = document.getElementById("track"), counter = document.getElementById("counter");
     const prev = document.getElementById("prev"), next = document.getElementById("next");
@@ -282,12 +315,12 @@ function route() {
 }
 
 fetch("data/posts.json").then(r => r.json()).then(data => {
-  POSTS = data;
-  POSTS.forEach(p => {
+  data.forEach(p => {
     BYID[p.id] = p;
     p._tags = p.tags.map(t => lower(t.replace(/^#/, "")));
-    p._hay = lower([p.title, ...p.body, ...p.tags].join(" "));
+    p._hay = lower([p.title, ...p.body.map(unmark), ...p.tags].join(" "));
   });
+  POSTS = data.filter(p => !p.archive);
   CHIPS = RUBRICS.filter(([k]) => POSTS.filter(p => p._tags.includes(lower(k))).length >= 5);
   window.addEventListener("hashchange", route);
   route();
