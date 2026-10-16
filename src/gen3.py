@@ -34,6 +34,8 @@ site_ids = {r["id"] for r in rows if r["text"].strip() or r["photos"] or rich.ge
 GREET = re.compile(r"^(доброе утро|доброго утра|добрый день|доброго дня|добрый вечер|доброго вечера|доброй ночи|спокойной ночи)\b", re.I)
 TAGS_ONLY = re.compile(r"^(рубрик[аи]:\s*)?(#\S+[\s,]*)+$", re.I)
 MARK = re.compile(r"⟦([^|⟧]+)\|([^⟧]*)⟧")
+# VK mentions «@id837561370 (Patron-67 )» and «[id1|Имя]» read as noise on the site: keep the name, linked like VK does
+MENTION = re.compile(r"(?<![\w.@])@((?:id|club|public)\d+|[A-Za-z][\w.]{2,})\s*\(([^)\n]+)\)|\[((?:id|club|public)\d+)\|([^\]\n]+)\]")
 KEEP_CASE = ("улица", "проспект", "площадь", "переулок", "шоссе")
 ABBR = {"улица": "ул.", "проспект": "пр."}
 
@@ -97,8 +99,13 @@ def resolve(href):
     return re.sub(r"^https?://(m\.)?vk\.com", "https://vk.ru", href)
 
 
+def unmention(m):
+    ref, name = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
+    return f"⟦https://vk.ru/{ref}|{name.strip()}⟧"
+
+
 def build(r, text, archive):
-    text = text.replace("\r", "").strip()
+    text = MENTION.sub(unmention, text.replace("\r", "").strip())
     text = MARK.sub(lambda m: f"⟦{resolve(m.group(1))}|{m.group(2)}⟧", text)
     paras = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
     if paras:
