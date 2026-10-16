@@ -1,7 +1,7 @@
 # Смоленский транспорт — тестовый сайт
 
 Лента постов со стены группы ВКонтакте «Смоленский транспорт» (https://vk.ru/smolensk_transport) с 2015 года.
-Открыт на GitHub Pages: https://kod4k.github.io/smoltransport/
+Сайт: https://smoltransport.ru (наш сервер в России). Адрес на GitHub Pages https://kod4k.github.io/smoltransport/ с 17.10.2026 только переадресует туда (корневой index.html — копия src/redirect.html, файл .pages-redirect не даёт build.sh его перезаписать).
 
 - Данные, которые собирает `src/gen3.py` из выгрузки стены (делается на Mac из архива `_служебное/posts.jsonl`):
   - `data/index/meta.json` — годы, месяцы с диапазонами номеров постов, число постов в рубриках;
@@ -9,7 +9,7 @@
   - `data/m/<ГГГГ-ММ>.json` — полные посты за месяц, грузятся, когда открывают пост;
   - `data/posts.json` — всё одним файлом, для старой версии страницы.
   Полноразмерные фото берутся с серверов ВК, превью лежат в `thumbs/`. Что не показываем на сайте 12+, записано в `src/inputs/hide-12plus.json`.
-- `src/head.html`, `src/base.css`, `src/extra.css`, `src/body.html` — части страницы; `sh src/build.sh` собирает из них `site/index.html` (код для smoltransport.ru) и, пока работает github.io, копию в корне.
-- `site/` — код сайта для сервера smoltransport.ru (`index.html`, `media/`). Данные (`data/`, `thumbs/`) сервер получает с Mac, не из этого репозитория.
+- `src/head.html`, `src/base.css`, `src/extra.css`, `src/body.html` — части страницы; `sh src/build.sh` собирает из них `site/index.html` (код для smoltransport.ru).
+- `site/` — код сайта для сервера smoltransport.ru (`index.html`, `media/`). Данные (`data/`, `thumbs/`) сервер получает с Mac, в репозитории их нет. Для проверки на своём компьютере собирайте данные gen3.py в отдельную папку.
 - `server/search/` — поиск по всем постам для smoltransport.ru (`search.py` читает `data/m/`, служба systemd, настройка nginx). Тоже без журнала запросов. Без него (github.io) страница ищет по карточкам ленты в браузере.
 - `server/views/` — счётчик просмотров постов для smoltransport.ru (`views.py`, служба systemd, настройка nginx). Ничего о читателе не хранит: ни cookie, ни адресов, ни журнала запросов. На github.io счётчика нет.
