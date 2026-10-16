@@ -112,8 +112,10 @@ def build(r, text, archive):
             tags.append(h)
     flat = MARK.sub(lambda m: m.group(2), " ".join(paras))
     vids = videos.get(r["id"], [])
+    nofeed = False
     if not paras and vids:
         title, body = vids[0]["title"] or "Видео", paras
+        nofeed = not vids[0]["title"]  # a bare video with no words reads as noise in the feed
     elif not paras or (len(flat) < 70 and re.search(r"#фото", flat, re.I)):
         title, body = "Фото дня", paras
     else:
@@ -137,6 +139,8 @@ def build(r, text, archive):
         o["videos"] = vids
     if archive:
         o["archive"] = True
+    if nofeed:
+        o["nofeed"] = True
     return o
 
 

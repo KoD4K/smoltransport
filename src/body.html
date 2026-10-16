@@ -322,7 +322,7 @@ fetch("data/posts.json").then(r => r.json()).then(data => {
     p._tags = p.tags.map(t => lower(t.replace(/^#/, "")));
     p._hay = lower([p.title, ...p.body.map(unmark), ...p.tags].join(" "));
   });
-  POSTS = data.filter(p => !p.archive);
+  POSTS = data.filter(p => !p.archive && !p.nofeed);  // untitled video-only posts open as pages but stay out of the feed
   CHIPS = RUBRICS.filter(([k]) => POSTS.filter(p => p._tags.includes(lower(k))).length >= 5);
   window.addEventListener("hashchange", route);
   route();
