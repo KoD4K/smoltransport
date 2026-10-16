@@ -1,8 +1,3 @@
-.search { position: relative; max-width: 420px; }
-.search input { width: 100%; font: 400 1rem var(--body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px 10px 40px; }
-.search input::placeholder { color: var(--muted); }
-.search input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.search svg { position: absolute; left: 14px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--muted); }
 .feed-stats { color: var(--muted); font-size: var(--step--1); font-variant-numeric: tabular-nums; }
 .month { font-family: var(--display); font-weight: 700; font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding-block: 28px 4px; display: flex; align-items: center; gap: 12px; }
 .month::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -67,4 +62,46 @@
   nav.main a { flex: none; padding: 6px 12px; font-size: 0.875rem; }
   main { padding-block: 20px 48px; }
   .feed-head { gap: 12px; margin-bottom: 16px; }
+}
+/* masthead search and the filter button (Evgenii 16.10: filters hidden until asked for, search top right) */
+nav.main { margin-left: auto; }
+.hs-toggle { display: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; place-items: center; flex: none; }
+.hs-toggle svg { width: 18px; height: 18px; }
+.hs-toggle:hover, .hs-toggle[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.hs-field { position: relative; width: 220px; flex: none; }
+.hs-field input { width: 100%; font: 400 0.9375rem var(--body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px 8px 36px; }
+.hs-field input::placeholder { color: var(--muted); }
+.hs-field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hs-field svg { position: absolute; left: 13px; top: 50%; width: 15px; height: 15px; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.fh-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fbtn { display: inline-flex; align-items: center; gap: 8px; font: 500 0.875rem/1 var(--body); padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.fbtn svg { width: 16px; height: 16px; }
+.fbtn:hover, .fbtn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.f-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 0.75rem; font-weight: 600; display: inline-grid; place-items: center; }
+.f-count[hidden] { display: none; }
+.fpanel { display: flex; flex-direction: column; gap: 16px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.fpanel[hidden] { display: none; }
+.fgroup { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.flabel { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.fpanel .dates input[type="date"] { background: var(--bg); }
+.feed-stats[hidden] { display: none; }
+.reset-all { font: inherit; color: var(--accent); background: none; border: 0; padding: 0 0 0 6px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 720px) {
+  .brand { flex: 1; }
+  .hs-toggle { display: grid; order: 2; }
+  .hs-field { display: none; order: 3; width: 100%; }
+  header.mast.searching .hs-field { display: block; }
+  nav.main { order: 4; margin-left: 0; }
+  .fpanel { padding: 14px; }
+  .fpanel .rubrics { flex-wrap: wrap; overflow: visible; margin-inline: 0; padding-inline: 0; }
+}
+.dpair { display: inline-flex; align-items: center; gap: 8px; }
+.meta .views { display: inline-flex; align-items: center; gap: 5px; }
+.meta .views[hidden] { display: none; }
+@media (max-width: 720px) {
+  .fpanel .dates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .dpair { min-width: 0; }
+  .dpair input[type="date"] { flex: 1; width: 100%; }
+  .fpanel .dates .chip { justify-self: stretch; }
+  .fpanel .dates .d-reset { grid-column: 1 / -1; }
 }

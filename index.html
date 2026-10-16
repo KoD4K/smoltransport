@@ -157,11 +157,6 @@ footer.foot .age { color: var(--fg); border-color: var(--muted); }
   dl.imprint dt { border-bottom: 0; padding-bottom: 0; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
-.search { position: relative; max-width: 420px; }
-.search input { width: 100%; font: 400 1rem var(--body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px 10px 40px; }
-.search input::placeholder { color: var(--muted); }
-.search input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.search svg { position: absolute; left: 14px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--muted); }
 .feed-stats { color: var(--muted); font-size: var(--step--1); font-variant-numeric: tabular-nums; }
 .month { font-family: var(--display); font-weight: 700; font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding-block: 28px 4px; display: flex; align-items: center; gap: 12px; }
 .month::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -227,6 +222,48 @@ footer.foot .age { color: var(--fg); border-color: var(--muted); }
   main { padding-block: 20px 48px; }
   .feed-head { gap: 12px; margin-bottom: 16px; }
 }
+/* masthead search and the filter button (Evgenii 16.10: filters hidden until asked for, search top right) */
+nav.main { margin-left: auto; }
+.hs-toggle { display: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; place-items: center; flex: none; }
+.hs-toggle svg { width: 18px; height: 18px; }
+.hs-toggle:hover, .hs-toggle[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.hs-field { position: relative; width: 220px; flex: none; }
+.hs-field input { width: 100%; font: 400 0.9375rem var(--body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px 8px 36px; }
+.hs-field input::placeholder { color: var(--muted); }
+.hs-field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hs-field svg { position: absolute; left: 13px; top: 50%; width: 15px; height: 15px; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.fh-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fbtn { display: inline-flex; align-items: center; gap: 8px; font: 500 0.875rem/1 var(--body); padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.fbtn svg { width: 16px; height: 16px; }
+.fbtn:hover, .fbtn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.f-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 0.75rem; font-weight: 600; display: inline-grid; place-items: center; }
+.f-count[hidden] { display: none; }
+.fpanel { display: flex; flex-direction: column; gap: 16px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.fpanel[hidden] { display: none; }
+.fgroup { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.flabel { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.fpanel .dates input[type="date"] { background: var(--bg); }
+.feed-stats[hidden] { display: none; }
+.reset-all { font: inherit; color: var(--accent); background: none; border: 0; padding: 0 0 0 6px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 720px) {
+  .brand { flex: 1; }
+  .hs-toggle { display: grid; order: 2; }
+  .hs-field { display: none; order: 3; width: 100%; }
+  header.mast.searching .hs-field { display: block; }
+  nav.main { order: 4; margin-left: 0; }
+  .fpanel { padding: 14px; }
+  .fpanel .rubrics { flex-wrap: wrap; overflow: visible; margin-inline: 0; padding-inline: 0; }
+}
+.dpair { display: inline-flex; align-items: center; gap: 8px; }
+.meta .views { display: inline-flex; align-items: center; gap: 5px; }
+.meta .views[hidden] { display: none; }
+@media (max-width: 720px) {
+  .fpanel .dates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .dpair { min-width: 0; }
+  .dpair input[type="date"] { flex: 1; width: 100%; }
+  .fpanel .dates .chip { justify-self: stretch; }
+  .fpanel .dates .d-reset { grid-column: 1 / -1; }
+}
 </style>
 </head>
 <body>
@@ -246,6 +283,13 @@ footer.foot .age { color: var(--fg); border-color: var(--muted); }
       <a href="#zaprosy" data-nav="zaprosy">Запросы и ответы</a>
       <a href="#redakciya" data-nav="redakciya">О редакции</a>
     </nav>
+    <button class="hs-toggle" id="hs-toggle" type="button" aria-label="Поиск по постам" aria-expanded="false" aria-controls="hs-field">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    </button>
+    <label class="hs-field" id="hs-field" for="q">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Поиск по постам" autocomplete="off" aria-label="Поиск по постам">
+    </label>
   </div>
 </header>
 
@@ -274,7 +318,7 @@ const MONTHS = ["января","февраля","марта","апреля","м�
 const MONTHS_N = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 const view = document.getElementById("view");
 let POSTS = [], BYID = {}, CHIPS = [];
-const state = { filter: null, q: "", from: "", to: "", shown: PAGE, scrollY: 0 };
+const state = { filter: null, q: "", from: "", to: "", shown: PAGE, scrollY: 0, panel: false };
 let observer = null;
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -344,8 +388,17 @@ function renderList() {
   const feed = document.getElementById("feed");
   const more = document.getElementById("more");
   const stats = document.getElementById("stats");
-  const period = state.from || state.to ? ` за период ${state.from ? "с " + human(state.from) : ""}${state.from && state.to ? " " : ""}${state.to ? "по " + human(state.to) : ""}` : "";
-  stats.textContent = state.filter || state.q || period ? `Найдено: ${list.length}${period}` : `${list.length} постов с 1 января по ${human(POSTS[0].date)}`;
+  const period = state.from || state.to ? `${state.from ? "с " + human(state.from) : ""}${state.from && state.to ? " " : ""}${state.to ? "по " + human(state.to) : ""}` : "";
+  const rubric = state.filter ? CHIPS.find(([k]) => k === state.filter)[1] : "";
+  const active = [state.q && `«${state.q}»`, rubric, period].filter(Boolean);
+  stats.innerHTML = active.length
+    ? `Найдено: ${list.length} · ${esc(active.join(" · "))} <button class="reset-all" id="reset-all" type="button">Сбросить</button>`
+    : "";  // no public post count (Evgenii 16.10)
+  stats.hidden = !active.length;
+  if (active.length) document.getElementById("reset-all").addEventListener("click", resetAll);
+  const n = (state.filter ? 1 : 0) + (state.from || state.to ? 1 : 0);
+  const badge = document.getElementById("f-count");
+  badge.textContent = n; badge.hidden = !n;
   document.getElementById("d-reset").hidden = !(state.from || state.to);
   let html = "", month = "";
   list.slice(0, state.shown).forEach((p, i) => {
@@ -357,7 +410,7 @@ function renderList() {
   });
   feed.innerHTML = html || `<div class="empty">Ничего не нашлось. Попробуйте другое слово, рубрику или период.</div>`;
   const left = list.length - state.shown;
-  more.innerHTML = left > 0 ? `<button id="more-btn">Показать ещё ${Math.min(PAGE, left)}</button><small>Осталось ${left}</small>` : "";
+  more.innerHTML = left > 0 ? `<button id="more-btn">Показать ещё</button>` : "";
   if (left > 0) {
     document.getElementById("more-btn").addEventListener("click", loadMore);
     if (observer) observer.disconnect();
@@ -371,23 +424,33 @@ function renderFeed() {
   setNav("feed");
   view.innerHTML = `
     <div class="feed-head">
-      <div class="eyebrow">Материалы</div>
-      <label class="search" for="q">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input id="q" type="search" placeholder="Поиск по постам: Кашена, маршрут 20, 71-623…" value="${esc(state.q)}" autocomplete="off" aria-label="Поиск по постам">
-      </label>
-      <div class="dates" role="group" aria-label="Период">
-        <label for="d-from">с</label>
-        <input id="d-from" type="date" min="${POSTS[POSTS.length - 1].date}" max="${POSTS[0].date}" value="${state.from}">
-        <label for="d-to">по</label>
-        <input id="d-to" type="date" min="${POSTS[POSTS.length - 1].date}" max="${POSTS[0].date}" value="${state.to}">
-        <button class="chip" id="d-week" type="button">7 дней</button>
-        <button class="chip" id="d-month" type="button">30 дней</button>
-        <button class="chip d-reset" id="d-reset" type="button" hidden>Сбросить даты</button>
+      <div class="fh-row">
+        <div class="eyebrow">Материалы</div>
+        <button class="fbtn" id="f-toggle" type="button" aria-expanded="${state.panel}" aria-controls="fpanel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+          Фильтр <span class="f-count" id="f-count" hidden></span>
+        </button>
       </div>
-      <div class="chips rubrics" role="group" aria-label="Рубрики">
-        <button class="chip" id="f-all" aria-pressed="${!state.filter}" data-f="">Все</button>
-        ${CHIPS.map(([k, label]) => `<button class="chip" id="f-${k}" aria-pressed="${state.filter === k}" data-f="${k}">${label}</button>`).join("")}
+      <div class="fpanel" id="fpanel"${state.panel ? "" : " hidden"}>
+        <div class="fgroup">
+          <div class="flabel">Период</div>
+          <div class="dates" role="group" aria-label="Период">
+            <span class="dpair"><label for="d-from">с</label>
+            <input id="d-from" type="date" min="${POSTS[POSTS.length - 1].date}" max="${POSTS[0].date}" value="${state.from}"></span>
+            <span class="dpair"><label for="d-to">по</label>
+            <input id="d-to" type="date" min="${POSTS[POSTS.length - 1].date}" max="${POSTS[0].date}" value="${state.to}"></span>
+            <button class="chip" id="d-week" type="button">7 дней</button>
+            <button class="chip" id="d-month" type="button">30 дней</button>
+            <button class="chip d-reset" id="d-reset" type="button" hidden>Сбросить даты</button>
+          </div>
+        </div>
+        <div class="fgroup">
+          <div class="flabel">Рубрики</div>
+          <div class="chips rubrics" role="group" aria-label="Рубрики">
+            <button class="chip" id="f-all" aria-pressed="${!state.filter}" data-f="">Все</button>
+            ${CHIPS.map(([k, label]) => `<button class="chip" id="f-${k}" aria-pressed="${state.filter === k}" data-f="${k}">${label}</button>`).join("")}
+          </div>
+        </div>
       </div>
       <div class="feed-stats" id="stats"></div>
     </div>
@@ -409,13 +472,37 @@ function renderFeed() {
   document.getElementById("d-week").addEventListener("click", () => setDates(back(7), POSTS[0].date));
   document.getElementById("d-month").addEventListener("click", () => setDates(back(30), POSTS[0].date));
   document.getElementById("d-reset").addEventListener("click", () => setDates("", ""));
-  let t;
-  document.getElementById("q").addEventListener("input", e => {
-    clearTimeout(t);
-    t = setTimeout(() => { state.q = lower(e.target.value.trim()); state.shown = PAGE; renderList(); }, 200);
+  const ft = document.getElementById("f-toggle"), fp = document.getElementById("fpanel");
+  ft.addEventListener("click", () => {
+    state.panel = !state.panel; fp.hidden = !state.panel; ft.setAttribute("aria-expanded", String(state.panel));
   });
   renderList();
 }
+function resetAll() {
+  state.filter = null; state.q = ""; state.from = ""; state.to = ""; state.shown = PAGE;
+  document.getElementById("q").value = "";
+  renderFeed();
+}
+
+// search lives in the masthead, so it works from any page and takes the reader back to the feed
+let qTimer;
+const qEl = document.getElementById("q"), hsToggle = document.getElementById("hs-toggle"), mast = document.querySelector("header.mast");
+qEl.addEventListener("input", () => {
+  clearTimeout(qTimer);
+  qTimer = setTimeout(() => {
+    state.q = lower(qEl.value.trim()); state.shown = PAGE;
+    if (location.hash.replace("#", "")) { state.scrollY = 0; location.hash = ""; }
+    else renderList();
+  }, 200);
+});
+qEl.addEventListener("keydown", e => {
+  if (e.key === "Escape") { qEl.value = ""; qEl.dispatchEvent(new Event("input")); mast.classList.remove("searching"); hsToggle.setAttribute("aria-expanded", "false"); }
+});
+hsToggle.addEventListener("click", () => {
+  const open = mast.classList.toggle("searching");
+  hsToggle.setAttribute("aria-expanded", String(open));
+  if (open) qEl.focus();
+});
 
 function renderPost(p) {
   setNav("feed");
@@ -425,7 +512,7 @@ function renderPost(p) {
     <a class="back" href="#">${chev(-1, 16)} Все материалы</a>
     <article>
       <div class="article-head">
-        <div class="meta"><span>${human(p.date)}, ${esc(p.time)}</span>${p.archive ? `<span class="arch">Из архива группы</span>` : ""}</div>
+        <div class="meta"><span>${human(p.date)}, ${esc(p.time)}</span>${p.archive ? `<span class="arch">Из архива группы</span>` : ""}<span class="views" id="views" data-id="${p.id}" hidden></span></div>
         <h1 class="page-title${p.title.length > 70 ? " long" : ""}">${esc(p.title)}</h1>
       </div>
       ${(p.videos || []).map((v, k) => `<div class="video" data-k="${k}">
@@ -466,6 +553,7 @@ function renderPost(p) {
     f.setAttribute("allowfullscreen", ""); f.setAttribute("frameborder", "0");
     btn.replaceWith(f);
   }));
+  countView(p.id);
   if (n > 1) {
     const track = document.getElementById("track"), counter = document.getElementById("counter");
     const prev = document.getElementById("prev"), next = document.getElementById("next");
@@ -478,6 +566,22 @@ function renderPost(p) {
     track.addEventListener("keydown", e => { if (e.key === "ArrowRight") { e.preventDefault(); go(idx() + 1); } if (e.key === "ArrowLeft") { e.preventDefault(); go(idx() - 1); } });
     sync();
   }
+}
+
+// views are counted on our server (/api/views/<id>); one browser adds at most one view per post a day
+const EYE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const plural = (n, one, few, many) => n % 10 === 1 && n % 100 !== 11 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? few : many;
+function countView(id) {
+  if (location.hostname.endsWith("github.io")) return;  // the preview has no server behind it
+  const key = "seen-" + id, today = new Date().toISOString().slice(0, 10);
+  let seen = false;
+  try { seen = localStorage.getItem(key) === today; localStorage.setItem(key, today); } catch (e) {}
+  fetch("api/views/" + id, { method: seen ? "GET" : "POST" }).then(r => r.ok ? r.json() : null).then(d => {
+    const el = document.getElementById("views");
+    if (!d || !el || el.dataset.id !== id || !(d.views > 0)) return;
+    el.innerHTML = `${EYE}${d.views.toLocaleString("ru-RU")} ${plural(d.views, "просмотр", "просмотра", "просмотров")}`;
+    el.hidden = false;
+  }).catch(() => {});
 }
 
 function renderRequests() {
@@ -562,3 +666,5 @@ fetch("data/posts.json").then(r => r.json()).then(data => {
   view.innerHTML = `<div class="loading">Не удалось загрузить посты. Обновите страницу.</div>`;
 });
 </script>
+</body>
+</html>

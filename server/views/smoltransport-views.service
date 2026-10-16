@@ -1,0 +1,17 @@
+[Unit]
+Description=smoltransport.ru post view counter
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 -I /opt/smoltransport/views/views.py
+Environment=POSTS_JSON=/var/www/smoltransport/data/posts.json PORT=8090
+DynamicUser=yes
+StateDirectory=smoltransport-views
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
