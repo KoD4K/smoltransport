@@ -29,3 +29,14 @@
 @media (max-width: 720px) { .pager { grid-template-columns: minmax(0, 1fr); } .pager a.next { grid-column: 1; } }
 .page-title.long { text-transform: none; font-style: normal; font-weight: 700; font-size: var(--step-2); line-height: 1.25; }
 .item.lead .item-title.long { text-transform: none; font-style: normal; font-weight: 700; font-size: var(--step-2); line-height: 1.25; }
+.dates { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
+.dates label { color: var(--muted); font-size: 0.9375rem; }
+.dates input[type="date"] { font: 500 0.9375rem var(--body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-width: 0; max-width: 100%; }
+.dates input[type="date"]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dates input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+.dates .d-reset { color: var(--accent); border-color: var(--accent); }
+@media (max-width: 720px) {
+  .rubrics { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+  .rubrics::-webkit-scrollbar { display: none; }
+  .rubrics .chip { flex: none; }
+}

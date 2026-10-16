@@ -187,6 +187,17 @@ footer.foot .age { color: var(--fg); border-color: var(--muted); }
 @media (max-width: 720px) { .pager { grid-template-columns: minmax(0, 1fr); } .pager a.next { grid-column: 1; } }
 .page-title.long { text-transform: none; font-style: normal; font-weight: 700; font-size: var(--step-2); line-height: 1.25; }
 .item.lead .item-title.long { text-transform: none; font-style: normal; font-weight: 700; font-size: var(--step-2); line-height: 1.25; }
+.dates { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
+.dates label { color: var(--muted); font-size: 0.9375rem; }
+.dates input[type="date"] { font: 500 0.9375rem var(--body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-width: 0; max-width: 100%; }
+.dates input[type="date"]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dates input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+.dates .d-reset { color: var(--accent); border-color: var(--accent); }
+@media (max-width: 720px) {
+  .rubrics { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+  .rubrics::-webkit-scrollbar { display: none; }
+  .rubrics .chip { flex: none; }
+}
 </style>
 </head>
 <body>
@@ -234,7 +245,7 @@ const MONTHS = ["января","февраля","марта","апреля","м�
 const MONTHS_N = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 const view = document.getElementById("view");
 let POSTS = [], BYID = {}, CHIPS = [];
-const state = { filter: null, q: "", shown: PAGE, scrollY: 0 };
+const state = { filter: null, q: "", from: "", to: "", shown: PAGE, scrollY: 0 };
 let observer = null;
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -258,6 +269,8 @@ function setNav(key) {
 function matches(p) {
   if (state.filter && !p._tags.includes(lower(state.filter))) return false;
   if (state.q && !p._hay.includes(state.q)) return false;
+  if (state.from && p.date < state.from) return false;
+  if (state.to && p.date > state.to) return false;
   return true;
 }
 
@@ -282,16 +295,18 @@ function renderList() {
   const feed = document.getElementById("feed");
   const more = document.getElementById("more");
   const stats = document.getElementById("stats");
-  stats.textContent = state.filter || state.q ? `Найдено: ${list.length}` : `${list.length} постов с 1 января по ${human(POSTS[0].date)}`;
+  const period = state.from || state.to ? ` за период ${state.from ? "с " + human(state.from) : ""}${state.from && state.to ? " " : ""}${state.to ? "по " + human(state.to) : ""}` : "";
+  stats.textContent = state.filter || state.q || period ? `Найдено: ${list.length}${period}` : `${list.length} постов с 1 января по ${human(POSTS[0].date)}`;
+  document.getElementById("d-reset").hidden = !(state.from || state.to);
   let html = "", month = "";
   list.slice(0, state.shown).forEach((p, i) => {
     const m = p.date.slice(0, 7);
-    const lead = i === 0 && !state.filter && !state.q;
+    const lead = i === 0 && !state.filter && !state.q && !state.from && !state.to;
     if (m !== month && !lead) html += `<div class="month">${MONTHS_N[+m.slice(5) - 1]} ${m.slice(0, 4)}</div>`;
     if (lead || m !== month) month = m;
     html += itemHtml(p, lead);
   });
-  feed.innerHTML = html || `<div class="empty">Ничего не нашлось. Попробуйте другое слово или рубрику.</div>`;
+  feed.innerHTML = html || `<div class="empty">Ничего не нашлось. Попробуйте другое слово, рубрику или период.</div>`;
   const left = list.length - state.shown;
   more.innerHTML = left > 0 ? `<button id="more-btn">Показать ещё ${Math.min(PAGE, left)}</button><small>Осталось ${left}</small>` : "";
   if (left > 0) {
@@ -312,7 +327,16 @@ function renderFeed() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input id="q" type="search" placeholder="Поиск по постам: Кашена, маршрут 20, 71-623…" value="${esc(state.q)}" autocomplete="off" aria-label="Поиск по постам">
       </label>
-      <div class="chips" role="group" aria-label="Рубрики">
+      <div class="dates" role="group" aria-label="Период">
+        <label for="d-from">с</label>
+        <input id="d-from" type="date" min="${POSTS[POSTS.length - 1].date}" max="${POSTS[0].date}" value="${state.from}">
+        <label for="d-to">по</label>
+        <input id="d-to" type="date" min="${POSTS[POSTS.length - 1].date}" max="${POSTS[0].date}" value="${state.to}">
+        <button class="chip" id="d-week" type="button">7 дней</button>
+        <button class="chip" id="d-month" type="button">30 дней</button>
+        <button class="chip d-reset" id="d-reset" type="button" hidden>Сбросить даты</button>
+      </div>
+      <div class="chips rubrics" role="group" aria-label="Рубрики">
         <button class="chip" id="f-all" aria-pressed="${!state.filter}" data-f="">Все</button>
         ${CHIPS.map(([k, label]) => `<button class="chip" id="f-${k}" aria-pressed="${state.filter === k}" data-f="${k}">${label}</button>`).join("")}
       </div>
@@ -325,6 +349,17 @@ function renderFeed() {
     view.querySelectorAll("[data-f]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
     renderList();
   }));
+  const fromEl = document.getElementById("d-from"), toEl = document.getElementById("d-to");
+  const setDates = (f, t2) => {
+    if (f && t2 && f > t2) [f, t2] = [t2, f];
+    state.from = f; state.to = t2; fromEl.value = f; toEl.value = t2; state.shown = PAGE; renderList();
+  };
+  const back = days => { const d = new Date(POSTS[0].date + "T12:00:00"); d.setDate(d.getDate() - days + 1); return d.toISOString().slice(0, 10); };
+  fromEl.addEventListener("change", () => setDates(fromEl.value, toEl.value));
+  toEl.addEventListener("change", () => setDates(fromEl.value, toEl.value));
+  document.getElementById("d-week").addEventListener("click", () => setDates(back(7), POSTS[0].date));
+  document.getElementById("d-month").addEventListener("click", () => setDates(back(30), POSTS[0].date));
+  document.getElementById("d-reset").addEventListener("click", () => setDates("", ""));
   let t;
   document.getElementById("q").addEventListener("input", e => {
     clearTimeout(t);
