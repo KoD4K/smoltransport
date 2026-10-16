@@ -50,8 +50,25 @@ def untag(m):
     return " ".join(parts)
 
 
+LEAD_TAGS = ("нампишут", "слухи", "ретро", "фото", "несмоленское", "официальныйответ", "обещание", "проверка")
+LEAD = re.compile(r"^\s*#([\wё]+)[\s:.—–-]*", re.I)
+
+
+def strip_lead(s):
+    """Drop rubric-only hashtags at the start of a title: «#намПишут Таганрогский трамвай» -> «Таганрогский трамвай»."""
+    while True:
+        m = LEAD.match(s)
+        if not m or m.group(1).lower() not in LEAD_TAGS:
+            return s
+        rest = s[m.end():]
+        if not rest or not rest[0].isupper():  # «#намПишут смоляне, что…» reads as a sentence: keep it
+            return s
+        s = rest
+
+
 def plain(s):
     s = MARK.sub(lambda m: m.group(2), s)
+    s = strip_lead(s.strip())
     s = re.sub(r"\(?https?://\S+\)?", "", s.replace("\n", " "))
     s = re.sub(r"#([\wё]+)", untag, s)
     s = re.sub(r"\s{2,}", " ", s).strip()
