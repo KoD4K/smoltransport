@@ -1,0 +1,17 @@
+[Unit]
+Description=smoltransport.ru search over all posts
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 -I /opt/smoltransport/search/search.py
+Environment=DATA_DIR=/var/www/smoltransport/data PORT=8091
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+MemoryMax=200M
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

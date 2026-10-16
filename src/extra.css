@@ -111,3 +111,7 @@ nav.main { margin-left: auto; }
 .vk-video span:last-child { display: flex; flex-direction: column; gap: 2px; }
 .vk-video small { color: var(--accent); font-size: var(--step--1); }
 .vk-video:hover { border-color: var(--accent); }
+
+/* the feed waits for a search or an older year: keep the old cards, dimmed */
+.feed.busy { opacity: .45; transition: opacity .2s; }
+.empty a { display: block; margin-top: 10px; color: var(--accent); font-weight: 600; }

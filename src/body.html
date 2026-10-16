@@ -1,4 +1,4 @@
-<div class="proto"><div class="wrap"><b>Прототип</b><span>Тестовая версия сайта для обратной связи. Материалы — посты со стены группы ВКонтакте за 2026 год, в том виде, как они вышли.</span></div></div>
+<div class="proto"><div class="wrap"><b>Прототип</b><span>Тестовая версия сайта для обратной связи. Материалы — посты со стены группы ВКонтакте в том виде, как они вышли.</span></div></div>
 
 <header class="mast">
   <div class="wrap">
@@ -48,13 +48,20 @@ const RUBRICS = [
 const MONTHS = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
 const MONTHS_N = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 const view = document.getElementById("view");
-let POSTS = [], BYID = {}, CHIPS = [];
-const state = { filter: null, q: "", from: "", to: "", shown: PAGE, scrollY: 0, panel: false };
+// data/index/meta.json lists the years and months; data/index/<year>.json holds the feed cards of a year and is loaded
+// as the reader scrolls back; data/m/<YYYY-MM>.json holds the full posts of a month and is loaded when one opens.
+// Search and filters ask the server (api/search) and fall back to the cards in the browser. Old layout: data/posts.json.
+let YEARS = [], MONTH_IDS = [], RUBRIC_N = {}, CHIPS = [], NEWEST = "", OLDEST = "";
+const IDX = {}, CARD = {}, FULL = {}, LOADS = {}, SEARCHES = {};
+let FEED = [], NOSEARCH = false, listSeq = 0, routeSeq = 0;
+const state = { filter: null, q: "", qText: "", from: "", to: "", shown: PAGE, scrollY: 0, panel: false };
 let observer = null;
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const human = d => { const [y, m, day] = d.split("-").map(Number); return `${day} ${MONTHS[m - 1]} ${y}`; };
 const lower = s => s.toLowerCase();
+const norm = s => s.toLowerCase().replace(/ё/g, "е");
+const feedable = c => !c.archive && !c.nofeed;  // untitled video-only posts open as pages but stay out of the feed
 const chev = (dir, size) => `<svg viewBox="0 0 24 24" ${size ? `width="${size}" height="${size}"` : ""} fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${dir < 0 ? '<path d="M15 5l-7 7 7 7"/>' : '<path d="M9 5l7 7-7 7"/>'}</svg>`;
 const tagsHtml = t => t.length ? `<div class="tags">${t.map(x => `<span>${esc(x.replace(/^#/, ""))}</span>`).join("")}</div>` : "";
 const MARK = /⟦([^|⟧]+)\|([^⟧]*)⟧/g;
@@ -84,46 +91,123 @@ function imgTag(ph, cls, eager, alt = "") {
 function setNav(key) {
   document.querySelectorAll("[data-nav]").forEach(a => a.dataset.nav === key ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
 }
-function matches(p) {
-  if (state.filter && !p._tags.includes(lower(state.filter))) return false;
-  if (state.q && !p._hay.includes(state.q)) return false;
-  if (state.from && p.date < state.from) return false;
-  if (state.to && p.date > state.to) return false;
-  return true;
+function matches(c) {
+  if (state.filter && !c._tags.includes(lower(state.filter))) return false;
+  if (state.from && c.date < state.from) return false;
+  if (state.to && c.date > state.to) return false;
+  return !state.q || state.q.split(" ").every(w => c._hay.includes(w));
+}
+
+const getJSON = url => fetch(url).then(r => {
+  if (!r.ok) throw Object.assign(new Error(url), { status: r.status });
+  return r.json();
+});
+function prepCard(c, full) {
+  c._tags = c.tags.map(t => lower(t.replace(/^#/, "")));
+  c._hay = norm([c.title, full ? full.body.map(unmark).join(" ") : c.lede, ...c.tags].join(" "));
+  CARD[c.id] = c;
+}
+function cardOf(p) {
+  const lede = p.lede !== undefined ? p.lede : p.body[0] ? unmark(p.body[0]) : "";
+  const c = { id: p.id, date: p.date, title: p.title, lede: lede.length > 240 ? lede.slice(0, 240).replace(/\s\S*$/, "") + "…" : lede,
+    tags: p.tags, np: p.photos.length, ph: p.photos[0], archive: p.archive, nofeed: p.nofeed };
+  if (p.videos) { c.nv = p.videos.length; c.v = p.videos[0]; }
+  return c;
+}
+// the feed is the unbroken run of loaded years from the newest one, so it never skips a year
+function rebuildFeed() {
+  FEED = [];
+  for (const y of YEARS) {
+    if (!y.feed) continue;
+    if (!IDX[y.year]) return;
+    FEED.push(...IDX[y.year].filter(feedable));
+  }
+}
+const nextYear = () => YEARS.find(y => y.feed && !IDX[y.year]);
+function loadYear(y) {
+  if (IDX[y]) return Promise.resolve();
+  return LOADS["i" + y] || (LOADS["i" + y] = getJSON(`data/index/${y}.json`).then(cards => {
+    cards.forEach(c => prepCard(c));
+    IDX[y] = cards;
+    rebuildFeed();
+  }).catch(e => { delete LOADS["i" + y]; throw e; }));
+}
+const monthOf = id => (MONTH_IDS.find(([, lo, hi]) => +id >= lo && +id <= hi) || [])[0];
+function loadMonth(m) {
+  return LOADS["m" + m] || (LOADS["m" + m] = getJSON(`data/m/${m}.json`).then(ps => ps.forEach(p => { FULL[p.id] = p; }))
+    .catch(e => { delete LOADS["m" + m]; throw e; }));
+}
+function search(key) {
+  if (!SEARCHES[key]) SEARCHES[key] = { hits: null, pending: getJSON("api/search?" + key)
+    .then(d => { SEARCHES[key].hits = d.hits; })
+    .catch(() => { delete SEARCHES[key]; NOSEARCH = true; }) };  // no search service (github.io, a local copy): search the cards here
+  return SEARCHES[key];
+}
+// what the feed shows now: {items, total, more}, or {wait} while a year, a search or all years are loading
+function currentList() {
+  if (!state.q && !state.filter && !state.from && !state.to) {
+    const y = FEED.length <= state.shown && nextYear();
+    return { items: FEED.slice(0, state.shown), more: FEED.length > state.shown || !!nextYear(), wait: y ? loadYear(y.year) : null };
+  }
+  if (!NOSEARCH) {
+    const params = new URLSearchParams();
+    if (state.q) params.set("q", state.q);
+    if (state.filter) params.set("tag", lower(state.filter));
+    if (state.from) params.set("from", state.from);
+    if (state.to) params.set("to", state.to);
+    const s = search(params.toString());
+    if (!s.hits) return { wait: s.pending };
+    const page = s.hits.slice(0, state.shown);
+    const need = [...new Set(page.map(h => h[1]))].filter(y => !IDX[y]);
+    if (need.length) return { wait: Promise.all(need.map(loadYear)) };
+    return { items: page.map(h => CARD[h[0]]).filter(Boolean), total: s.hits.length, more: s.hits.length > state.shown };
+  }
+  const missing = YEARS.filter(y => y.feed && !IDX[y.year]);
+  if (missing.length) return { wait: Promise.all(missing.map(y => loadYear(y.year))) };
+  const list = FEED.filter(matches);
+  return { items: list.slice(0, state.shown), total: list.length, more: list.length > state.shown };
 }
 
 // VK video covers are signed links that expire: fall back to the «Видео» placeholder
 const COVER_FB = "this.replaceWith(Object.assign(document.createElement('div'),{className:'nophoto',textContent:'Видео'}))";
 const PLAY = `<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>`;
 function itemHtml(p, lead) {
-  const ph = p.photos[0], v = (p.videos || [])[0];
+  const ph = p.ph, v = p.v;
   let pic;
   if (ph) pic = lead ? imgTag(ph, "thumb", true) : `<img class="thumb" src="${esc(ph.thumb || ph.full)}" alt="" loading="lazy" referrerpolicy="no-referrer"${ph.thumb && ph.full ? ` onerror="this.onerror=null;this.src='${esc(ph.full)}'"` : ""}>`;
   else if (v && v.cover) pic = `<img class="thumb" src="${esc(v.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="${COVER_FB}">`;
   else pic = `<div class="nophoto">${v ? "Видео" : "Текст"}</div>`;
   pic = `<div class="pic">${pic}${v ? PLAY + (v.duration ? `<span class="dur">${esc(v.duration)}</span>` : "") : ""}</div>`;
-  const lede = p.lede !== undefined ? p.lede : p.body[0] ? unmark(p.body[0]) : "";
   return `<a class="item${lead ? " lead" : ""}" href="#p${p.id}">
       ${pic}
       <div class="item-body">
-        <div class="meta"><span>${human(p.date)}</span>${p.photos.length > 1 ? `<span>${p.photos.length} фото</span>` : ""}${p.videos ? `<span>${p.videos.length > 1 ? p.videos.length + " видео" : "видео"}</span>` : ""}</div>
+        <div class="meta"><span>${human(p.date)}</span>${p.np > 1 ? `<span>${p.np} фото</span>` : ""}${p.nv ? `<span>${p.nv > 1 ? p.nv + " видео" : "видео"}</span>` : ""}</div>
         <h2 class="item-title${p.title.length > 70 ? " long" : ""}">${esc(p.title)}</h2>
-        ${lede ? `<p class="item-lede">${esc(lede.length > 240 ? lede.slice(0, 240).replace(/\s\S*$/, "") + "…" : lede)}</p>` : ""}
+        ${p.lede ? `<p class="item-lede">${esc(p.lede)}</p>` : ""}
         ${tagsHtml(p.tags.slice(0, 5))}
       </div>
     </a>`;
 }
 
 function renderList() {
-  const list = POSTS.filter(matches);
   const feed = document.getElementById("feed");
+  if (!feed) return;
   const more = document.getElementById("more");
   const stats = document.getElementById("stats");
+  const seq = ++listSeq, r = currentList();
+  if (r.wait) r.wait.then(() => { if (seq === listSeq) renderList(); },
+    () => { if (seq === listSeq) { feed.classList.remove("busy"); feed.innerHTML = `<div class="empty">Не удалось загрузить посты. Проверьте интернет и попробуйте ещё раз.</div>`; } });
+  if (!r.items) {  // keep what is on screen until the answer comes
+    if (!feed.innerHTML.trim()) feed.innerHTML = `<div class="loading">Ищем по всем годам…</div>`;
+    feed.classList.add("busy");
+    return;
+  }
+  feed.classList.remove("busy");
   const period = state.from || state.to ? `${state.from ? "с " + human(state.from) : ""}${state.from && state.to ? " " : ""}${state.to ? "по " + human(state.to) : ""}` : "";
   const rubric = state.filter ? CHIPS.find(([k]) => k === state.filter)[1] : "";
-  const active = [state.q && `«${state.q}»`, rubric, period].filter(Boolean);
+  const active = [state.q && `«${state.qText}»`, rubric, period].filter(Boolean);
   stats.innerHTML = active.length
-    ? `Найдено: ${list.length} · ${esc(active.join(" · "))} <button class="reset-all" id="reset-all" type="button">Сбросить</button>`
+    ? `Найдено: ${r.total} · ${esc(active.join(" · "))} <button class="reset-all" id="reset-all" type="button">Сбросить</button>`
     : "";  // no public post count (Evgenii 16.10)
   stats.hidden = !active.length;
   if (active.length) document.getElementById("reset-all").addEventListener("click", resetAll);
@@ -132,7 +216,7 @@ function renderList() {
   badge.textContent = n; badge.hidden = !n;
   document.getElementById("d-reset").hidden = !(state.from || state.to);
   let html = "", month = "";
-  list.slice(0, state.shown).forEach((p, i) => {
+  r.items.forEach((p, i) => {
     const m = p.date.slice(0, 7);
     const lead = i === 0 && !state.filter && !state.q && !state.from && !state.to;
     if (m !== month && !lead) html += `<div class="month">${MONTHS_N[+m.slice(5) - 1]} ${m.slice(0, 4)}</div>`;
@@ -140,9 +224,8 @@ function renderList() {
     html += itemHtml(p, lead);
   });
   feed.innerHTML = html || `<div class="empty">Ничего не нашлось. Попробуйте другое слово, рубрику или период.</div>`;
-  const left = list.length - state.shown;
-  more.innerHTML = left > 0 ? `<button id="more-btn">Показать ещё</button>` : "";
-  if (left > 0) {
+  more.innerHTML = r.more ? `<button id="more-btn">Показать ещё</button>` : "";
+  if (r.more) {
     document.getElementById("more-btn").addEventListener("click", loadMore);
     if (observer) observer.disconnect();
     observer = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) loadMore(); }, { rootMargin: "600px 0px" });
@@ -167,9 +250,9 @@ function renderFeed() {
           <div class="flabel">Период</div>
           <div class="dates" role="group" aria-label="Период">
             <span class="dpair"><label for="d-from">с</label>
-            <input id="d-from" type="date" min="${POSTS[POSTS.length - 1].date}" max="${POSTS[0].date}" value="${state.from}"></span>
+            <input id="d-from" type="date" min="${OLDEST}" max="${NEWEST}" value="${state.from}"></span>
             <span class="dpair"><label for="d-to">по</label>
-            <input id="d-to" type="date" min="${POSTS[POSTS.length - 1].date}" max="${POSTS[0].date}" value="${state.to}"></span>
+            <input id="d-to" type="date" min="${OLDEST}" max="${NEWEST}" value="${state.to}"></span>
             <button class="chip" id="d-week" type="button">7 дней</button>
             <button class="chip" id="d-month" type="button">30 дней</button>
             <button class="chip d-reset" id="d-reset" type="button" hidden>Сбросить даты</button>
@@ -197,11 +280,11 @@ function renderFeed() {
     if (f && t2 && f > t2) [f, t2] = [t2, f];
     state.from = f; state.to = t2; fromEl.value = f; toEl.value = t2; state.shown = PAGE; renderList();
   };
-  const back = days => { const d = new Date(POSTS[0].date + "T12:00:00"); d.setDate(d.getDate() - days + 1); return d.toISOString().slice(0, 10); };
+  const back = days => { const d = new Date(NEWEST + "T12:00:00"); d.setDate(d.getDate() - days + 1); return d.toISOString().slice(0, 10); };
   fromEl.addEventListener("change", () => setDates(fromEl.value, toEl.value));
   toEl.addEventListener("change", () => setDates(fromEl.value, toEl.value));
-  document.getElementById("d-week").addEventListener("click", () => setDates(back(7), POSTS[0].date));
-  document.getElementById("d-month").addEventListener("click", () => setDates(back(30), POSTS[0].date));
+  document.getElementById("d-week").addEventListener("click", () => setDates(back(7), NEWEST));
+  document.getElementById("d-month").addEventListener("click", () => setDates(back(30), NEWEST));
   document.getElementById("d-reset").addEventListener("click", () => setDates("", ""));
   const ft = document.getElementById("f-toggle"), fp = document.getElementById("fpanel");
   ft.addEventListener("click", () => {
@@ -210,7 +293,7 @@ function renderFeed() {
   renderList();
 }
 function resetAll() {
-  state.filter = null; state.q = ""; state.from = ""; state.to = ""; state.shown = PAGE;
+  state.filter = null; state.q = ""; state.qText = ""; state.from = ""; state.to = ""; state.shown = PAGE;
   document.getElementById("q").value = "";
   renderFeed();
 }
@@ -221,7 +304,7 @@ const qEl = document.getElementById("q"), hsToggle = document.getElementById("hs
 qEl.addEventListener("input", () => {
   clearTimeout(qTimer);
   qTimer = setTimeout(() => {
-    state.q = lower(qEl.value.trim()); state.shown = PAGE;
+    state.qText = qEl.value.trim().replace(/\s+/g, " ").slice(0, 100); state.q = norm(state.qText); state.shown = PAGE;
     if (location.hash.replace("#", "")) { state.scrollY = 0; location.hash = ""; }
     else renderList();
   }, 200);
@@ -238,7 +321,6 @@ hsToggle.addEventListener("click", () => {
 function renderPost(p) {
   setNav("feed");
   const n = p.photos.length;
-  const i = POSTS.indexOf(p), newer = i >= 0 ? POSTS[i - 1] : null, older = i >= 0 ? POSTS[i + 1] : null;
   view.innerHTML = `
     <a class="back" href="#">${chev(-1, 16)} Все материалы</a>
     <article>
@@ -271,10 +353,7 @@ function renderPost(p) {
         ${p.links.length ? `<div class="linklist"><span class="src">Ссылки из поста</span>${p.links.map(l => `<a href="${esc(l.href)}"${l.pid ? "" : ' target="_blank" rel="noopener"'}>${esc(l.label)}</a>`).join("")}</div>` : ""}
         <a class="vk-link" href="${esc(p.url)}" target="_blank" rel="noopener">Обсудить в группе ВКонтакте ${chev(1, 16)}</a>
       </div>
-      <nav class="pager" aria-label="Соседние посты">
-        ${newer ? `<a href="#p${newer.id}"><small>Новее · ${human(newer.date)}</small><span>${esc(newer.title)}</span></a>` : ""}
-        ${older ? `<a class="next" href="#p${older.id}"><small>Раньше · ${human(older.date)}</small><span>${esc(older.title)}</span></a>` : ""}
-      </nav>
+      <nav class="pager" id="pager" data-id="${p.id}" aria-label="Соседние посты"></nav>
     </article>`;
   view.querySelectorAll("button.vcover").forEach(btn => btn.addEventListener("click", () => {
     const src = btn.dataset.embed + (btn.dataset.embed.includes("?") ? "&" : "?") + "autoplay=1";
@@ -285,6 +364,12 @@ function renderPost(p) {
     btn.replaceWith(f);
   }));
   countView(p.id);
+  neighbours(p).then(([newer, older]) => {
+    const nav = document.getElementById("pager");
+    if (!nav || nav.dataset.id !== p.id) return;
+    nav.innerHTML = `${newer ? `<a href="#p${newer.id}"><small>Новее · ${human(newer.date)}</small><span>${esc(newer.title)}</span></a>` : ""}
+        ${older ? `<a class="next" href="#p${older.id}"><small>Раньше · ${human(older.date)}</small><span>${esc(older.title)}</span></a>` : ""}`;
+  }).catch(() => {});
   if (n > 1) {
     const track = document.getElementById("track"), counter = document.getElementById("counter");
     const prev = document.getElementById("prev"), next = document.getElementById("next");
@@ -297,6 +382,32 @@ function renderPost(p) {
     track.addEventListener("keydown", e => { if (e.key === "ArrowRight") { e.preventDefault(); go(idx() + 1); } if (e.key === "ArrowLeft") { e.preventDefault(); go(idx() - 1); } });
     sync();
   }
+}
+
+// the posts next to this one in the feed: [newer, older]; at the edge of a year they come from the neighbouring year
+function neighbours(p) {
+  const y = +p.date.slice(0, 4), yi = YEARS.findIndex(x => x.year === y);
+  if (yi < 0) return Promise.resolve([null, null]);
+  return loadYear(y).then(() => {
+    const list = IDX[y].filter(feedable), i = list.findIndex(c => c.id === p.id);
+    if (i < 0) return [null, null];
+    const side = dir => {
+      if (list[i + dir]) return list[i + dir];
+      for (let k = yi + dir; k >= 0 && k < YEARS.length; k += dir) {
+        if (!YEARS[k].feed) continue;
+        return loadYear(YEARS[k].year).then(() => { const l = IDX[YEARS[k].year].filter(feedable); return dir < 0 ? l[l.length - 1] : l[0]; });
+      }
+      return null;
+    };
+    return Promise.all([side(-1), side(1)]);
+  });
+}
+function renderMissing(id, failed) {
+  setNav("feed");
+  view.innerHTML = `
+    <a class="back" href="#">${chev(-1, 16)} Все материалы</a>
+    <div class="empty">${failed ? "Не удалось загрузить пост. Проверьте интернет и обновите страницу." : "Этого поста на сайте нет."}
+      <a href="https://vk.ru/wall-102293762_${esc(id)}" target="_blank" rel="noopener">Открыть в группе ВКонтакте</a></div>`;
 }
 
 // views are counted on our server (/api/views/<id>); one browser adds at most one view per post a day
@@ -373,24 +484,53 @@ function renderAbout() {
 
 let lastHash = "";
 function route() {
-  const h = location.hash.replace("#", "");
+  const h = location.hash.replace("#", ""), seq = ++routeSeq;
   if (!lastHash && h) state.scrollY = window.scrollY;
-  const post = h.startsWith("p") && BYID[h.slice(1)];
-  if (post) { renderPost(post); window.scrollTo(0, 0); }
+  if (/^p\d+$/.test(h)) {
+    const id = h.slice(1), m = monthOf(id);
+    if (FULL[id] || !m) FULL[id] ? renderPost(FULL[id]) : renderMissing(id);
+    else {
+      view.innerHTML = `<div class="loading">Загружаем пост…</div>`;
+      loadMonth(m).then(() => { if (seq === routeSeq) FULL[id] ? renderPost(FULL[id]) : renderMissing(id); },
+        () => { if (seq === routeSeq) renderMissing(id, true); });
+    }
+    window.scrollTo(0, 0);
+  }
   else if (h === "zaprosy") { renderRequests(); window.scrollTo(0, 0); }
   else if (h === "redakciya") { renderAbout(); window.scrollTo(0, 0); }
   else { renderFeed(); if (lastHash.startsWith("p")) window.scrollTo(0, state.scrollY); }
   lastHash = h;
 }
 
-fetch("data/posts.json").then(r => r.json()).then(data => {
+// old layout: everything in data/posts.json, searched in the browser
+function legacy(data) {
+  const years = {};
   data.forEach(p => {
-    BYID[p.id] = p;
-    p._tags = p.tags.map(t => lower(t.replace(/^#/, "")));
-    p._hay = lower([p.title, ...p.body.map(unmark), ...p.tags].join(" "));
+    FULL[p.id] = p;
+    const c = cardOf(p);
+    prepCard(c, p);
+    (years[p.date.slice(0, 4)] = years[p.date.slice(0, 4)] || []).push(c);
   });
-  POSTS = data.filter(p => !p.archive && !p.nofeed);  // untitled video-only posts open as pages but stay out of the feed
-  CHIPS = RUBRICS.filter(([k]) => POSTS.filter(p => p._tags.includes(lower(k))).length >= 5);
+  YEARS = Object.keys(years).sort().reverse().map(y => {
+    IDX[y] = years[y];
+    const f = years[y].filter(feedable);
+    return { year: +y, feed: f.length, first: f.length ? f[f.length - 1].date : "", last: f.length ? f[0].date : "" };
+  });
+  rebuildFeed();
+  FEED.forEach(c => new Set(c._tags).forEach(t => { RUBRIC_N[t] = (RUBRIC_N[t] || 0) + 1; }));
+  NOSEARCH = true;
+}
+getJSON("data/index/meta.json").then(meta => {
+  YEARS = meta.years; MONTH_IDS = meta.months; RUBRIC_N = meta.rubrics;
+  const y = nextYear();
+  return y && loadYear(y.year);
+}, e => {
+  if (e.status >= 500) throw e;
+  return getJSON("data/posts.json").then(legacy);  // no meta.json yet (or an error page in its place): the old layout
+}).then(() => {
+  const withFeed = YEARS.filter(y => y.feed);
+  NEWEST = withFeed[0].last; OLDEST = withFeed[withFeed.length - 1].first;
+  CHIPS = RUBRICS.filter(([k]) => (RUBRIC_N[lower(k)] || 0) >= 5);
   window.addEventListener("hashchange", route);
   route();
 }).catch(() => {

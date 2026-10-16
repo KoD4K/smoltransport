@@ -1,5 +1,5 @@
 {
-  "_why": "Site is 12+ (Evgenii, 16.10.2026). Photos listed by number (1-based) are not shown; videos with \"vk\" are shown as a plain link to VK, without cover or player. Texts stay as on the wall.",
+  "_why": "Site is 12+ (Evgenii, 16.10.2026). Photos listed by number (1-based) are not shown; videos with \"vk\" are shown as a plain link to VK, without cover or player; \"post\": true keeps the whole post off the site. Swear words are masked in gen3.py (SWEAR). Checked: 2026 on 16.10, 2015–2025 on 17.10.",
   "125533": {"photos": [2]},
   "136143": {"photos": [2]},
   "138193": {"videos": "vk"},
@@ -7,5 +7,15 @@
   "133614": {"videos": "vk"},
   "127076": {"videos": "vk"},
   "119636": {"videos": "vk"},
-  "135512": {"videos": "vk"}
+  "135512": {"videos": "vk"},
+  "118701": {"photos": [4]},
+  "110124": {"photos": [1]},
+  "98190": {"photos": [1]},
+  "96528": {"photos": [1]},
+  "86290": {"photos": [6]},
+  "85097": {"photos": [1]},
+  "67715": {"photos": [1]},
+  "59558": {"photos": [1]},
+  "58860": {"photos": [1]},
+  "114643": {"post": true}
 }

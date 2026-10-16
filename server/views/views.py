@@ -2,14 +2,14 @@
 """Post view counter for smoltransport.ru.
 
 POST /api/views/<id> adds a view and returns {"id", "views"}; GET returns the count without adding.
-Only ids present in data/posts.json are counted. Nothing about the reader is stored: no cookies, no
+Only ids of posts on the site are counted (data/index/<year>.json, or data/posts.json in the old layout). Nothing about the reader is stored: no cookies, no
 addresses, no log. The page itself skips the POST when this browser already opened the post today.
 """
-import json, os, re, sqlite3, threading
+import glob, json, os, re, sqlite3, threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DB = os.path.join(os.environ.get("STATE_DIRECTORY", "/var/lib/smoltransport-views"), "views.sqlite")
-POSTS = os.environ.get("POSTS_JSON", "/var/www/smoltransport/data/posts.json")
+DATA = os.environ.get("DATA_DIR", "/var/www/smoltransport/data")
 PATH = re.compile(r"^/api/views/(\d{1,12})/?$")
 BOTS = re.compile(r"bot|crawl|spider|slurp|preview|fetch|curl|wget|python|java/|go-http|headless|lighthouse", re.I)
 
@@ -20,14 +20,19 @@ known, known_mtime = set(), None
 
 
 def known_ids():
-    """Post ids from posts.json, re-read whenever the site data is updated."""
+    """Post ids of the site, re-read whenever the site data is updated."""
     global known, known_mtime
+    files = [f for f in glob.glob(os.path.join(DATA, "index", "*.json")) if not f.endswith("meta.json")]
     try:
-        m = os.path.getmtime(POSTS)
+        if not files:  # old layout: one posts.json
+            files = [os.path.join(DATA, "posts.json")]
+        m = tuple(os.path.getmtime(f) for f in files)
         if m != known_mtime:
-            with open(POSTS, encoding="utf-8") as f:
-                known = {str(p["id"]) for p in json.load(f)}
-            known_mtime = m
+            ids = set()
+            for f in files:
+                with open(f, encoding="utf-8") as fh:
+                    ids |= {str(p["id"]) for p in json.load(fh)}
+            known, known_mtime = ids, m
     except (OSError, ValueError, KeyError, TypeError):
         pass
     return known

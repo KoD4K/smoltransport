@@ -33,6 +33,8 @@ HIDE = {}  # photos and videos kept off the 12+ site
 _hide = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inputs", "hide-12plus.json")
 if os.path.exists(_hide):
     HIDE = {k: v for k, v in json.load(open(_hide, encoding="utf-8")).items() if not k.startswith("_")}
+rows = [r for r in rows if not HIDE.get(r["id"], {}).get("post")]  # whole posts not for 12+
+arch = [a for a in arch if not HIDE.get(a["id"], {}).get("post")]
 site_ids = {r["id"] for r in rows if r["text"].strip() or r["photos"] or rich.get(r["id"], "").strip() or videos.get(r["id"])} | {a["id"] for a in arch}
 
 GREET = re.compile(r"^(доброе утро|доброго утра|добрый день|доброго дня|добрый вечер|доброго вечера|доброй ночи|спокойной ночи)\b", re.I)
@@ -148,7 +150,12 @@ def unmention(m):
     return f"⟦https://vk.ru/{ref}|{name.strip()}⟧"
 
 
+# swear words are not for a 12+ site (436-ФЗ allows them from 16+): the word keeps its first letter, «г…»
+SWEAR = re.compile(r"(?<![а-яё])(?:мудак|мудач|говн|жоп)[а-яё]*", re.I)
+
+
 def build(r, text, archive):
+    text = SWEAR.sub(lambda m: m.group(0)[0] + "…", text)
     text = MENTION.sub(unmention, text.replace("\r", "").strip())
     text = MARK.sub(lambda m: f"⟦{resolve(m.group(1))}|{m.group(2)}⟧", text)
     paras = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
@@ -221,6 +228,61 @@ for o in out:
             d = dates[l["href"][2:]]
             l["label"] = "Наш пост от " + ".".join(reversed(d.split("-")))
 json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+
+# the same posts split for a site with all years (posts.json stays for old pages):
+# data/index/meta.json (years, months with their id ranges, rubric counts), data/index/<year>.json (feed cards),
+# data/m/<YYYY-MM>.json (full posts of a month, loaded when one of them opens; the search service reads these too)
+DATA = os.path.dirname(os.path.abspath(OUT))
+
+
+def card(o):
+    lede = o["lede"] if "lede" in o else (MARK.sub(lambda m: m.group(2), o["body"][0]) if o["body"] else "")
+    c = {"id": o["id"], "date": o["date"], "title": o["title"], "lede": short(lede, 240) if lede else "", "tags": o["tags"],
+         "np": len(o["photos"])}
+    if o["photos"]:
+        c["ph"] = o["photos"][0]
+    if o.get("videos"):
+        v = o["videos"][0]
+        c["nv"], c["v"] = len(o["videos"]), {"cover": v.get("cover", ""), "duration": v.get("duration", "")}
+    for k in ("nofeed", "archive"):
+        if o.get(k):
+            c[k] = True
+    return c
+
+
+def write(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+
+
+def bucket(key):
+    groups = {}
+    for o in out:
+        groups.setdefault(key(o), []).append(o)
+    return groups
+
+
+feedable = lambda o: not o.get("archive") and not o.get("nofeed")
+years, months = bucket(lambda o: o["date"][:4]), bucket(lambda o: o["date"][:7])
+for sub, groups, fn in (("index", years, lambda ps: [card(o) for o in ps]), ("m", months, lambda ps: ps)):
+    folder = os.path.join(DATA, sub)
+    os.makedirs(folder, exist_ok=True)
+    for name in os.listdir(folder):  # a year or month that has no posts any more
+        if name.endswith(".json") and name != "meta.json" and name[:-5] not in groups:
+            os.remove(os.path.join(folder, name))
+    for k, ps in groups.items():
+        write(os.path.join(folder, k + ".json"), fn(ps))
+rubrics = {}
+for o in filter(feedable, out):
+    for t in {t.lstrip("#").lower() for t in o["tags"]}:
+        rubrics[t] = rubrics.get(t, 0) + 1
+ids = lambda ps: [min(int(o["id"]) for o in ps), max(int(o["id"]) for o in ps)]
+write(os.path.join(DATA, "index", "meta.json"), {
+    "years": [{"year": int(y), "feed": sum(map(feedable, ps)), "first": min(o["date"] for o in ps if feedable(o)) if any(map(feedable, ps)) else "",
+               "last": max(o["date"] for o in ps if feedable(o)) if any(map(feedable, ps)) else "", "ids": ids(ps)}
+              for y, ps in sorted(years.items(), reverse=True)],
+    "months": [[m] + ids(ps) for m, ps in sorted(months.items(), reverse=True)],
+    "rubrics": rubrics})
 inline = sum(len(MARK.findall(" ".join(o["body"]))) for o in out)
 internal = sum(1 for o in out for m in MARK.findall(" ".join(o["body"])) if m[0].startswith("#p"))
 print(f"{len(out)} posts ({len(arch)} from the archive); {len(skipped)} skipped; inline links {inline}, to site pages {internal}; "
