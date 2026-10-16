@@ -102,7 +102,7 @@ function itemHtml(p, lead) {
   else if (v && v.cover) pic = `<img class="thumb" src="${esc(v.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="${COVER_FB}">`;
   else pic = `<div class="nophoto">${v ? "Видео" : "Текст"}</div>`;
   pic = `<div class="pic">${pic}${v ? PLAY + (v.duration ? `<span class="dur">${esc(v.duration)}</span>` : "") : ""}</div>`;
-  const lede = p.body[0] ? unmark(p.body[0]) : "";
+  const lede = p.lede !== undefined ? p.lede : p.body[0] ? unmark(p.body[0]) : "";
   return `<a class="item${lead ? " lead" : ""}" href="#p${p.id}">
       ${pic}
       <div class="item-body">
@@ -246,7 +246,7 @@ function renderPost(p) {
         <div class="meta"><span>${human(p.date)}, ${esc(p.time)}</span>${p.archive ? `<span class="arch">Из архива группы</span>` : ""}<span class="views" id="views" data-id="${p.id}" hidden></span></div>
         <h1 class="page-title${p.title.length > 70 ? " long" : ""}">${esc(p.title)}</h1>
       </div>
-      ${(p.videos || []).map((v, k) => `<div class="video" data-k="${k}">
+      ${(p.videos || []).map((v, k) => v.vk_only ? `<a class="vk-video" href="https://vk.ru/video${esc(v.id)}" target="_blank" rel="noopener">${PLAY}<span>Видео с места происшествия не показываем на сайте<small>Смотреть в ВКонтакте</small></span></a>` : `<div class="video" data-k="${k}">
         ${v.embed ? `<button class="vcover" type="button" data-embed="${esc(v.embed)}" aria-label="Смотреть видео${v.title ? ": " + esc(v.title) : ""}">
             ${v.cover ? `<img src="${esc(v.cover)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}${PLAY}${v.duration ? `<span class="dur">${esc(v.duration)}</span>` : ""}</button>`
           : `<a class="vcover" href="https://vk.ru/video${esc(v.id)}" target="_blank" rel="noopener" aria-label="Смотреть видео в ВКонтакте">

@@ -29,6 +29,10 @@ if VIDS and os.path.exists(VIDS):
                 {"id": x.get("id", ""), "cover": html.unescape(x.get("cover") or ""), "duration": x.get("duration") or "",
                  "title": "" if DEFAULT_VTITLE.match(x.get("title") or "") else (x.get("title") or ""),
                  "embed": html.unescape(x.get("embed") or "")} for x in v.get("videos", [])]
+HIDE = {}  # photos and videos kept off the 12+ site
+_hide = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inputs", "hide-12plus.json")
+if os.path.exists(_hide):
+    HIDE = {k: v for k, v in json.load(open(_hide, encoding="utf-8")).items() if not k.startswith("_")}
 site_ids = {r["id"] for r in rows if r["text"].strip() or r["photos"] or rich.get(r["id"], "").strip() or videos.get(r["id"])} | {a["id"] for a in arch}
 
 GREET = re.compile(r"^(доброе утро|доброго утра|добрый день|доброго дня|добрый вечер|доброго вечера|доброй ночи|спокойной ночи)\b", re.I)
@@ -79,6 +83,46 @@ def plain(s):
     return s[:1].upper() + s[1:]
 
 
+HASHTAG = re.compile(r"(?<![\w&#/])#([A-Za-zА-Яа-яЁё][\wё]*)")
+TAIL_TAGS = re.compile(r"(?:[ \t,]*(?<![\w&#/])#[A-Za-zА-Яа-яЁё][\wё]*)+[ \t,.]*$")
+
+
+def detag(p):
+    """The site shows rubrics under the post, so hashtags leave the text: a run of tags after the last
+    sentence goes, a tag inside a sentence becomes a plain word («Автор #фото:» -> «Автор фото:»)."""
+    p = MARK.sub(lambda m: m.group(2) if re.fullmatch(r"#[\wё]+", m.group(2).strip()) else m.group(0), p)
+    p = re.sub(r"[ \t]*\n?[ \t]*Рубрик[аи]:[ \t]*(?:#[\wё]+[ \t,]*)+$", "", p, flags=re.I)
+    tail = TAIL_TAGS.search(p)
+    if tail and (len(HASHTAG.findall(tail.group(0))) > 1 or tail.start() == 0
+                 or p[:tail.start()].rstrip()[-1:] in ".!?…»\")\n"):  # one tag right after a word is part of the sentence
+        p = p[:tail.start()]
+    out, last = "", 0
+    for m in MARK.finditer(p):
+        out += HASHTAG.sub(untag, p[last:m.start()]) + f"⟦{m.group(1)}|{HASHTAG.sub(untag, m.group(2))}⟧"
+        last = m.end()
+    out = (out + HASHTAG.sub(untag, p[last:])).strip()
+    return out[:1].upper() + out[1:] if p.lstrip().startswith("#") else out
+
+
+ABBR_DOT = re.compile(r"(?:\b(?:ул|пр|пер|мкр|пос|г|гг|д|им|мод|т\.е|т\.д|т\.п|др|см|стр|тыс|млн|млрд|руб|км|обл|наб|пл|ст|св|ок|напр|зам|нач|корп|кв|ед|рис|ср|вкл|совр)|(?<![\wё])[А-ЯЁA-Z])\.$", re.I)
+
+
+def headline(s):
+    """A sentence as a headline: no final period, unless it ends an abbreviation («2026 г.»)."""
+    s = plain(s)
+    return s[:-1] if s.endswith(".") and not s.endswith("..") and not ABBR_DOT.search(s) else s
+
+
+def first_sentence(p):
+    """(first sentence, rest) — never splits inside a link marker, after an abbreviation or an initial."""
+    for m in re.finditer(r"(?<=[.!?…])\s+(?=[«\"(#]?[А-ЯЁA-Z0-9⟦#])|[ \t]*\n\s*(?=[«\"(]?[А-ЯЁA-Z0-9])", p):
+        head = p[:m.start()]
+        if head.count("⟦") != head.count("⟧") or ABBR_DOT.search(head) or head.rstrip().endswith(":"):
+            continue
+        return head, p[m.end():]
+    return p, ""
+
+
 def short(s, n=110):
     if len(s) <= n:
         return s
@@ -119,20 +163,28 @@ def build(r, text, archive):
             tags.append(h)
     flat = MARK.sub(lambda m: m.group(2), " ".join(paras))
     vids = videos.get(r["id"], [])
-    nofeed = False
+    hide = HIDE.get(r["id"], {})
+    if hide.get("videos") == "vk":
+        vids = [dict(v, cover="", embed="", vk_only=True) for v in vids]
+    nofeed, lede, dropped = False, None, ""
     if not paras and vids:
         title, body = vids[0]["title"] or "Видео", paras
         nofeed = not vids[0]["title"]  # a bare video with no words reads as noise in the feed
-    elif not paras or (len(flat) < 70 and re.search(r"#фото", flat, re.I)):
+    elif not paras or (len(flat) < 70 and re.search(r"#фото", flat, re.I)):  # «Автор #фото: …» is a photo of the day
         title, body = "Фото дня", paras
     else:
         p0 = paras[0]
-        if len(plain(p0)) <= 110 and "\n" not in p0 and len(paras) > 1:
-            title, body = plain(p0).rstrip("."), paras[1:]
+        sent, rest = first_sentence(p0)
+        if len(plain(p0)) <= 110 and ("\n" not in p0 or not rest.strip()):
+            title, body, dropped = headline(p0), paras[1:], p0  # a short first paragraph is the headline itself
+        elif len(plain(sent)) <= 110:
+            title, body, dropped = headline(sent), ([rest.strip()] if rest.strip() else []) + paras[1:], sent
         else:
-            sent = re.split(r"(?<=[.!?…])\s+", p0)[0]
             title, body = short(plain(sent)).rstrip("."), paras
-    links = []
+            if title.endswith("…"):  # the feed shows the shortened headline, so its teaser starts after that sentence
+                lede = detag(MARK.sub(lambda m: m.group(2), rest)).strip()
+    body = [q for q in (detag(x) for x in body) if q.strip()]  # rubrics are shown under the post, not in the text
+    links = [{"href": h, "label": a or h} for h, a in MARK.findall(dropped)]  # links of the sentence that became the headline
     if r["id"] not in rich:  # no inline links known: keep the archive's list
         for h in r.get("links", []):
             href = resolve(h)
@@ -141,13 +193,15 @@ def build(r, text, archive):
     o = {"id": r["id"], "date": r["date"][:10], "time": r["date"][11:16],
          "url": "https://vk.ru/wall-102293762_" + r["id"], "title": title, "body": body, "tags": tags, "links": links,
          "photos": [{"full": ph["full"], "thumb": ph.get("thumb") and "thumbs/" + os.path.basename(ph["thumb"]).lstrip("-")}
-                    for ph in r["photos"]]}
+                    for k, ph in enumerate(r["photos"], 1) if k not in hide.get("photos", [])]}
     if vids:
         o["videos"] = vids
     if archive:
         o["archive"] = True
     if nofeed:
         o["nofeed"] = True
+    if lede is not None:
+        o["lede"] = lede
     return o
 
 
