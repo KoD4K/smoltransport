@@ -5,12 +5,16 @@ python3 gen3.py wall-2026.json links-2026.jsonl archive-linked.json out/posts.js
 wall-2026.json      2026 posts from the Mac archive (_служебное/posts.jsonl), photos with thumbs
 links-2026.jsonl    the same posts re-read with links kept in the text as ⟦href|anchor⟧
 archive-linked.json older posts that 2026 posts link to (shown as pages, not in the feed)
+videos.jsonl        optional: the posts' videos
+covers.json         optional: {post id: {"full", "thumb"}} feed pictures without text, made on the Mac from
+                    a post folder's превью-сайта.jpg, so a carousel's headline cover doesn't repeat the title
 """
 import json, re, os, sys, html
 from urllib.parse import unquote, urlparse, parse_qs
 
 SRC, RICH, ARCH, OUT = sys.argv[1:5]
 VIDS = sys.argv[5] if len(sys.argv) > 5 else ""
+COVERS = json.load(open(sys.argv[6], encoding="utf-8")) if len(sys.argv) > 6 and os.path.exists(sys.argv[6]) else {}
 rows = json.load(open(SRC, encoding="utf-8"))
 DEFAULT_VTITLE = re.compile(r"^\s*((clip|video) by\b|.*\.(mp4|mov|avi|mkv|3gp|webm)\s*$|(vid|img|mov|video)[_-]?\d|\S{30,}\s*$)", re.I)  # VK defaults and file names, not real headings
 rich = {}
@@ -251,7 +255,10 @@ def card(o):
     lede = o["lede"] if "lede" in o else (MARK.sub(lambda m: m.group(2), o["body"][0]) if o["body"] else "")
     c = {"id": o["id"], "date": o["date"], "title": o["title"], "lede": short(lede, 240) if lede else "", "tags": o["tags"],
          "np": len(o["photos"])}
-    if o["photos"]:
+    cov = COVERS.get(o["id"])
+    if cov and cov.get("full"):
+        c["ph"] = {"full": cov["full"], "thumb": cov.get("thumb") or cov["full"]}
+    elif o["photos"]:
         c["ph"] = o["photos"][0]
     if o.get("videos"):
         v = o["videos"][0]
