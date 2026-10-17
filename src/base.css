@@ -129,7 +129,7 @@ td.date { font-variant-numeric: tabular-nums; white-space: nowrap; }
 dl.imprint { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 0; max-width: 820px; margin: 0; border-top: 1px solid var(--line); }
 dl.imprint dt, dl.imprint dd { padding: 12px 0; border-bottom: 1px solid var(--line); margin: 0; }
 dl.imprint dt { color: var(--muted); padding-right: 16px; }
-.blank { color: var(--muted); font-style: italic; }
+.blank { color: var(--muted); }  /* imprint values still to come, shown in their final shape */
 .age { display: inline-grid; place-items: center; min-width: 40px; height: 28px; padding: 0 6px; border: 2px solid var(--fg); border-radius: 6px; font-family: var(--display); font-weight: 800; font-size: 0.875rem; }
 
 footer.foot { border-top: 1px solid var(--line); color: var(--muted); font-size: var(--step--1); }

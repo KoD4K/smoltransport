@@ -250,7 +250,7 @@ td.date { font-variant-numeric: tabular-nums; white-space: nowrap; }
 dl.imprint { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 0; max-width: 820px; margin: 0; border-top: 1px solid var(--line); }
 dl.imprint dt, dl.imprint dd { padding: 12px 0; border-bottom: 1px solid var(--line); margin: 0; }
 dl.imprint dt { color: var(--muted); padding-right: 16px; }
-.blank { color: var(--muted); font-style: italic; }
+.blank { color: var(--muted); }  /* imprint values still to come, shown in their final shape */
 .age { display: inline-grid; place-items: center; min-width: 40px; height: 28px; padding: 0 6px; border: 2px solid var(--fg); border-radius: 6px; font-family: var(--display); font-weight: 800; font-size: 0.875rem; }
 
 footer.foot { border-top: 1px solid var(--line); color: var(--muted); font-size: var(--step--1); }
@@ -1070,9 +1070,9 @@ function renderAbout() {
         <dt>Наименование</dt><dd>Сетевое издание «Смоленский транспорт»</dd>
         <dt>Учредитель</dt><dd>Пленкин Евгений Дмитриевич</dd>
         <dt>Главный редактор</dt><dd>Пленкин Е. Д.</dd>
-        <dt>Электронная почта редакции</dt><dd class="blank">адрес на домене сайта</dd>
-        <dt>Телефон редакции</dt><dd class="blank">номер телефона</dd>
-        <dt>Регистрация</dt><dd>Запись в реестре СМИ <span class="blank">ЭЛ № … от …</span>, выдана Роскомнадзором</dd>
+        <dt>Электронная почта редакции</dt><dd class="blank">news@smoltransport.ru</dd>
+        <dt>Телефон редакции</dt><dd class="blank">+7 (000) 000-00-00</dd>
+        <dt>Регистрация</dt><dd>Зарегистрировано Роскомнадзором, запись в реестре СМИ <span class="blank" style="white-space:nowrap">Эл № ФС77-00000 от 00.00.2026</span></dd>
         <dt>Знак информационной продукции</dt><dd><span class="age">12+</span></dd>
       </dl>
     </section>
