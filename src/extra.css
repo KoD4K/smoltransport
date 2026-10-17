@@ -188,11 +188,20 @@ header.mast.searching .hs-field { display: block; }
 .ans-tools { display: grid; gap: 12px; margin: 18px 0 8px; }
 .ans-tools input, .ans-tools select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: min(100%, 420px); }
 .ans-tools input:focus, .ans-tools select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.ans { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 16px; padding-block: 16px; border-top: 1px solid var(--line); text-decoration: none; align-items: start; }
-.ans img, .ans .nophoto { width: 72px; height: auto; aspect-ratio: 240 / 340; object-fit: cover; border-radius: 4px; background: var(--surface); display: block; font-size: 0.75rem; }
+.ans { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 16px; padding-block: 14px; border-top: 1px solid var(--line); text-decoration: none; align-items: start; }
+.ans img, .ans .nophoto { width: 52px; height: auto; aspect-ratio: 240 / 340; object-fit: cover; object-position: top; border-radius: 3px; background: var(--surface); display: block; font-size: 0.75rem; }
 .ans:hover .ans-sum { color: var(--accent); }
-.ans-sum { margin: 6px 0 8px; }
+.ans-meta { display: block; }  /* one line with dots, not a column of wrapped chips */
+.ans-meta span { white-space: nowrap; }
+.ans-meta span + span::before { content: " · "; }
+.ans-sum { margin: 4px 0 6px; }
+@media (max-width: 560px) {
+  .ans { grid-template-columns: minmax(0, 1fr); padding-block: 12px; }
+  .ans img, .ans .nophoto { display: none; }
+  .ans-sum { font-size: 0.9375rem; line-height: 1.45; }
+}
 .pick-box .pill { margin-bottom: 4px; }
+.scan-hint { margin: -4px 0 12px; }
 .scan { margin: 0 0 18px; max-width: 880px; }
 .scan img { max-width: 100%; height: auto; display: block; border-radius: 6px; background: #fff; }  /* small 2015 scans are not blown up */
 .scan figcaption { color: var(--muted); font-size: var(--step--1); margin-top: 6px; }

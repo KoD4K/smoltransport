@@ -608,6 +608,7 @@ function renderRequests(sub) {
           <thead><tr><th>№</th><th>Тема</th><th>Кому</th><th>Отправлено</th><th>Статус</th></tr></thead>
           <tbody>
             <tr><td class="num">1</td><td>Мост и ул. Кашена</td><td>Министерство транспорта и дорожного хозяйства Смоленской области</td><td class="date">16.10.2026</td><td><span class="pill wait">Ждём ответ</span></td></tr>
+            <tr><td class="num">2</td><td>Трамвай внутри Заднепровья</td><td>Управление транспорта и дорожного хозяйства администрации города</td><td class="date">16.10.2026</td><td><span class="pill wait">Ждём ответ</span></td></tr>
             <tr><td class="num">3</td><td>Бесхозяйные трамвайные остановки</td><td>Управление транспорта и дорожного хозяйства администрации города</td><td class="date">15.10.2026</td><td><span class="pill wait">Ждём ответ до 14.11</span></td></tr>
           </tbody>
         </table>
@@ -629,7 +630,8 @@ function renderRequests(sub) {
 // The «обещали — вышло» picks are editorial text kept in the repo (answers-picks.json, {letter id: pick}).
 const PICK = { done: ["ok", "Выполнено"], partly: ["wait", "Выполнено частично"], not: ["no", "Не выполнено"], unclear: ["wait", "Пока не ясно"] };
 const ans = { q: "", qText: "", topic: "", sender: "", shown: PAGE, scrollY: 0 };
-let ANS = null, ANS_LOAD = null;
+const OTHER = "Другие ведомства";  // senders with a single letter share one filter entry
+let ANS = null, ANS_LOAD = null, ANS_ONE = new Set();
 const ansDate = a => a.date_approx === "year" ? `${a.date.slice(0, 4)} год` : human(a.date);
 const pickPill = k => { const [cls, label] = PICK[k] || PICK.unclear; return `<span class="pill ${cls}">${label}</span>`; };
 function loadAnswers() {
@@ -640,12 +642,15 @@ function loadAnswers() {
       if (picks[a.id]) a.pick = picks[a.id];
       a._hay = norm([a.sender, a.sender_short, a.signer, a.number, a.summary, ...(a.topics || [])].join(" "));
     });
+    const n = {};
+    ANS.forEach(a => { n[a.sender_short] = (n[a.sender_short] || 0) + 1; });
+    ANS_ONE = new Set(Object.keys(n).filter(k => n[k] === 1));
     return ANS;
   }, () => { ANS_LOAD = null; return null; });
 }
 function ansMatches(a) {
   if (ans.topic && !(a.topics || []).includes(ans.topic)) return false;
-  if (ans.sender && a.sender_short !== ans.sender) return false;
+  if (ans.sender && (ans.sender === OTHER ? !ANS_ONE.has(a.sender_short) : a.sender_short !== ans.sender)) return false;
   return !ans.q || ans.q.split(" ").every(w => a._hay.includes(w));
 }
 function ansRow(a) {
@@ -653,7 +658,7 @@ function ansRow(a) {
   return `<a class="ans" href="#otvet/${esc(a.id)}">
       ${pg ? `<img src="${esc(pg.thumb || pg.full)}" alt="" loading="lazy">` : `<div class="nophoto">Скан</div>`}
       <div>
-        <div class="meta"><span>${ansDate(a)}</span><span>${esc(a.sender_short || a.sender)}</span>${a.number ? `<span>№ ${esc(a.number)}</span>` : ""}</div>
+        <div class="meta ans-meta"><span>${ansDate(a)}</span><span>${esc(a.sender_short || a.sender)}</span>${a.number ? `<span>№ ${esc(a.number)}</span>` : ""}</div>
         <p class="ans-sum">${esc(a.summary)}</p>
         ${a.pick ? pickPill(a.pick.status) : ""}
       </div>
@@ -663,7 +668,8 @@ function renderArchive(box) {
   const years = ANS.map(a => +a.date.slice(0, 4));
   const count = k => ANS.reduce((m, a) => [].concat(a[k] || []).reduce((m2, v) => (m2[v] = (m2[v] || 0) + 1, m2), m), {});
   const topics = Object.entries(count("topics")).sort((x, y) => y[1] - x[1]).map(([t]) => t);
-  const senders = Object.entries(count("sender_short")).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0], "ru")).map(([t]) => t);
+  const senders = Object.entries(count("sender_short")).filter(([, n]) => n > 1).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0], "ru")).map(([t]) => t);
+  if (ANS_ONE.size > 1) senders.push(OTHER); else senders.push(...ANS_ONE);
   const picks = ANS.filter(a => a.pick).sort((x, y) => (x.pick.order || 99) - (y.pick.order || 99));
   box.innerHTML = `
       <h2>Архив ответов ${Math.min(...years)}–${Math.max(...years)}</h2>
@@ -750,6 +756,7 @@ function renderAnswer(id) {
     </section>` : ""}
     <section class="section">
       <h2>Скан письма</h2>
+      <p class="src scan-hint">Нажмите на скан, чтобы открыть его целиком.</p>
       ${pages.map((pg, k) => `<figure class="scan"><a href="${esc(pg.full)}" target="_blank" rel="noopener">
         <img src="${esc(pg.full)}" alt="Страница ${k + 1} из ${pages.length}" loading="${k ? "lazy" : "eager"}"${pg.w && pg.h ? ` width="${pg.w}" height="${pg.h}"` : ""}></a>
         ${pages.length > 1 ? `<figcaption>Страница ${k + 1} из ${pages.length}</figcaption>` : ""}</figure>`).join("")}
