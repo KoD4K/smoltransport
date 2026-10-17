@@ -393,6 +393,7 @@ nav.main { margin-left: auto; }
 .rbtn[aria-pressed="true"] { border-color: var(--accent); background: var(--surface); }
 .rbtn[aria-pressed="true"] .rnum { background: var(--accent); color: var(--accent-ink); }
 .chips.days, .chips.kinds { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.sched-empty { margin-top: 22px; }  /* same gap under the day chips as the timetables get */
 .dirs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; margin-top: 22px; }
 .dir { background: var(--surface); border-radius: 14px; padding: 16px 16px 12px; min-width: 0; }
 .dir-head h3 { margin: 0; font: 700 var(--step-1)/1.25 var(--display); }
@@ -1008,7 +1009,7 @@ function renderSchedule(sub) {
     ${K.error ? `<p class="sched-warn">Последняя проверка сайта МУТТП не удалась, показано расписание от ${msk(K.parsed_at)}.</p>`
       : Date.now() - new Date(K.checked_at) > 3 * 864e5 ? `<p class="sched-warn">Расписание не проверялось с ${msk(K.checked_at)}, сверьтесь с сайтом МУТТП.</p>` : ""}
     ${dayLists.some(l => l.length) ? `<div class="dirs">${R.directions.map(d => dirHtml(d, now, today, tomorrowFirst)).join("")}</div>`
-      : `<div class="empty">${sched.day === "weekends" ? "По выходным" : "По будням"} этот маршрут не ходит.</div>`}
+      : `<div class="empty sched-empty">${sched.day === "weekends" ? "По выходным" : "По будням"} этот маршрут не ходит.</div>`}
     ${notes.length || depot ? `<div class="legend">
       ${notes.map(([k, text]) => `<span><i class="${MARK_CLS[k]}">15<sup>${esc(k)}</sup></i> ${esc(noteText(k, text))}</span>`).join("")}
       ${depot ? `<span><i class="dep">15<sup>д</sup></i> рейс в депо</span>` : ""}

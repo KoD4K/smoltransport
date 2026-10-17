@@ -560,7 +560,7 @@ function renderSchedule(sub) {
     ${K.error ? `<p class="sched-warn">Последняя проверка сайта МУТТП не удалась, показано расписание от ${msk(K.parsed_at)}.</p>`
       : Date.now() - new Date(K.checked_at) > 3 * 864e5 ? `<p class="sched-warn">Расписание не проверялось с ${msk(K.checked_at)}, сверьтесь с сайтом МУТТП.</p>` : ""}
     ${dayLists.some(l => l.length) ? `<div class="dirs">${R.directions.map(d => dirHtml(d, now, today, tomorrowFirst)).join("")}</div>`
-      : `<div class="empty">${sched.day === "weekends" ? "По выходным" : "По будням"} этот маршрут не ходит.</div>`}
+      : `<div class="empty sched-empty">${sched.day === "weekends" ? "По выходным" : "По будням"} этот маршрут не ходит.</div>`}
     ${notes.length || depot ? `<div class="legend">
       ${notes.map(([k, text]) => `<span><i class="${MARK_CLS[k]}">15<sup>${esc(k)}</sup></i> ${esc(noteText(k, text))}</span>`).join("")}
       ${depot ? `<span><i class="dep">15<sup>д</sup></i> рейс в депо</span>` : ""}

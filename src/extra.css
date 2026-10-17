@@ -124,6 +124,7 @@ nav.main { margin-left: auto; }
 .rbtn[aria-pressed="true"] { border-color: var(--accent); background: var(--surface); }
 .rbtn[aria-pressed="true"] .rnum { background: var(--accent); color: var(--accent-ink); }
 .chips.days, .chips.kinds { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.sched-empty { margin-top: 22px; }  /* same gap under the day chips as the timetables get */
 .dirs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; margin-top: 22px; }
 .dir { background: var(--surface); border-radius: 14px; padding: 16px 16px 12px; min-width: 0; }
 .dir-head h3 { margin: 0; font: 700 var(--step-1)/1.25 var(--display); }
