@@ -495,7 +495,7 @@ function dirHtml(d, now, today, tomorrowFirst) {
   });
   const gap = dayGap(list);
   return `<section class="dir">
-      <div class="dir-head"><h3>${esc(cap(d.stop))}</h3>${d.towards ? `<span>в сторону ${esc(d.towards)}</span>` : ""}</div>
+      <div class="dir-head"><h3>${esc(cap(d.stop))}</h3>${d.towards ? `<span>в сторону ${esc(d.towards)}</span>` : ""}${d.shared_with && d.shared_with.length ? `<span class="shared">Общие рейсы маршрутов ${esc([sched.route, ...d.shared_with].sort((a, b) => parseInt(a) - parseInt(b)).join(" и "))}</span>` : ""}</div>
       ${soon}
       <div class="dir-sum">${list.length === 1 ? `Один рейс в ${list[0].t}` : `Первый ${list[0].t} · последний ${list[list.length - 1].t}${gap ? ` · днём примерно ${gapText(gap)}` : ""}`}</div>
       <div class="hours">${hours.map(([h, xs]) => `<div class="hr"><b>${h}</b><span>${xs.map(x => {

@@ -398,6 +398,7 @@ nav.main { margin-left: auto; }
 .dir { background: var(--surface); border-radius: 14px; padding: 16px 16px 12px; min-width: 0; }
 .dir-head h3 { margin: 0; font: 700 var(--step-1)/1.25 var(--display); }
 .dir-head span { color: var(--muted); font-size: 0.9375rem; }
+.dir-head .shared { display: block; margin-top: 2px; }  /* runs MUTTP lists once for two routes */
 .soon { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
 .soon-l { width: 100%; color: var(--muted); font-size: var(--step--1); }
 .soon-t b { font: 700 1.25rem/1 var(--display); font-variant-numeric: tabular-nums; }
@@ -944,7 +945,7 @@ function dirHtml(d, now, today, tomorrowFirst) {
   });
   const gap = dayGap(list);
   return `<section class="dir">
-      <div class="dir-head"><h3>${esc(cap(d.stop))}</h3>${d.towards ? `<span>в сторону ${esc(d.towards)}</span>` : ""}</div>
+      <div class="dir-head"><h3>${esc(cap(d.stop))}</h3>${d.towards ? `<span>в сторону ${esc(d.towards)}</span>` : ""}${d.shared_with && d.shared_with.length ? `<span class="shared">Общие рейсы маршрутов ${esc([sched.route, ...d.shared_with].sort((a, b) => parseInt(a) - parseInt(b)).join(" и "))}</span>` : ""}</div>
       ${soon}
       <div class="dir-sum">${list.length === 1 ? `Один рейс в ${list[0].t}` : `Первый ${list[0].t} · последний ${list[list.length - 1].t}${gap ? ` · днём примерно ${gapText(gap)}` : ""}`}</div>
       <div class="hours">${hours.map(([h, xs]) => `<div class="hr"><b>${h}</b><span>${xs.map(x => {

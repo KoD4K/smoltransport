@@ -129,6 +129,7 @@ nav.main { margin-left: auto; }
 .dir { background: var(--surface); border-radius: 14px; padding: 16px 16px 12px; min-width: 0; }
 .dir-head h3 { margin: 0; font: 700 var(--step-1)/1.25 var(--display); }
 .dir-head span { color: var(--muted); font-size: 0.9375rem; }
+.dir-head .shared { display: block; margin-top: 2px; }  /* runs MUTTP lists once for two routes */
 .soon { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
 .soon-l { width: 100%; color: var(--muted); font-size: var(--step--1); }
 .soon-t b { font: 700 1.25rem/1 var(--display); font-variant-numeric: tabular-nums; }
