@@ -455,13 +455,22 @@ const dayOf = wd => wd >= 5 ? "weekends" : "workdays";
 const minsOf = t => { const [h, m] = t.split(":").map(Number); return (h < 3 ? h + 24 : h) * 60 + m; };
 const msk = iso => new Date(iso).toLocaleString("ru-RU", { timeZone: "Europe/Moscow", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).replace(" в ", ", ");
 const inMin = d => d < 60 ? `через ${d} ${plural(d, "минуту", "минуты", "минут")}` : `через ${Math.floor(d / 60)} ч ${d % 60} мин`;
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 function routeName(r) {
   const d = r.directions[0];
-  return d ? `${d.stop} — ${d.towards}` : "";
+  return r.title || (d ? `${cap(d.stop)} — ${d.towards}` : "");
 }
-// the usual gap between trams in the daytime (10:00–16:00), so a reader sees how often they run
+// muttp.ru footnotes, as a reader would say them
+function noteText(mark, text) {
+  if (text === "СМЕ") return "СМЕ: сцепка из двух вагонов";
+  return cap(text.replace(/Полиграфк-та/g, "Полиграфкомбината"));
+}
+const MARK_CLS = { "*": "m1", "**": "m2" };
+const gapText = g => g < 60 ? `каждые ${g} мин` : `раз в ${Math.floor(g / 60)} ч${g % 60 ? ` ${g % 60} мин` : ""}`;
+// the usual gap in the daytime (10:00–16:00), so a reader sees how often they run
 function dayGap(list) {
   const m = list.map(x => minsOf(x.t)).filter(v => v >= 600 && v <= 960);
+  if (m.length < 3) return 0;
   const gaps = m.slice(1).map((v, i) => v - m[i]).filter(g => g > 0).sort((a, b) => a - b);
   return gaps.length ? gaps[gaps.length >> 1] : 0;
 }
@@ -486,11 +495,11 @@ function dirHtml(d, now, today, tomorrowFirst) {
   });
   const gap = dayGap(list);
   return `<section class="dir">
-      <div class="dir-head"><h3>${esc(d.stop)}</h3><span>в сторону ${esc(d.towards)}</span></div>
+      <div class="dir-head"><h3>${esc(cap(d.stop))}</h3>${d.towards ? `<span>в сторону ${esc(d.towards)}</span>` : ""}</div>
       ${soon}
-      <div class="dir-sum">Первый ${list[0].t} · последний ${list[list.length - 1].t}${gap ? ` · днём примерно каждые ${gap} мин` : ""}</div>
+      <div class="dir-sum">${list.length === 1 ? `Один рейс в ${list[0].t}` : `Первый ${list[0].t} · последний ${list[list.length - 1].t}${gap ? ` · днём примерно ${gapText(gap)}` : ""}`}</div>
       <div class="hours">${hours.map(([h, xs]) => `<div class="hr"><b>${h}</b><span>${xs.map(x => {
-        const cls = [live && minsOf(x.t) < now.min && "past", x.t === nextT && "next", x.mark === "*" && "sme", x.depot === "in" && "dep"].filter(Boolean).join(" ");
+        const cls = [live && minsOf(x.t) < now.min && "past", x.t === nextT && "next", MARK_CLS[x.mark], x.depot === "in" && "dep"].filter(Boolean).join(" ");
         return `<i${cls ? ` class="${cls}"` : ""}>${x.t.slice(3)}${x.depot === "in" ? "<sup>д</sup>" : ""}</i>`;
       }).join("")}</span></div>`).join("")}</div>
     </section>`;
@@ -507,7 +516,11 @@ function renderSchedule(sub) {
   if (!kinds.length) { view.innerHTML = `<div class="empty">Расписание пока не загружено.</div>`; return; }
   const [subKind, subRoute] = (sub || "").split("-");
   if (kinds.includes(subKind)) sched.kind = subKind;
-  if (!kinds.includes(sched.kind)) sched.kind = kinds[0];
+  if (!kinds.includes(sched.kind)) {
+    let saved = "";
+    try { saved = localStorage.getItem("sched-kind") || ""; } catch (e) {}
+    sched.kind = kinds.includes(saved) ? saved : kinds[0];
+  }
   const K = SCHED.kinds[sched.kind];
   if (subRoute && K.routes.some(r => r.route === subRoute)) sched.route = subRoute;
   if (!K.routes.some(r => r.route === sched.route)) {
@@ -521,28 +534,38 @@ function renderSchedule(sub) {
   const today = sched.day === todayDay;
   const tomorrowDay = dayOf((now.wd + 1) % 7);
   const tomorrowFirst = d => ((d.days[tomorrowDay] || [])[0] || {}).t || "—";
-  const notes = Object.entries(K.notes || {}).filter(([k]) => k === "*");
+  const dayLists = R.directions.map(d => d.days[sched.day] || []);
+  const used = new Set(dayLists.flat().map(x => x.mark).filter(Boolean));
+  const notes = Object.entries(R.notes || K.notes || {}).filter(([k]) => used.has(k) && MARK_CLS[k]);
+  const depot = dayLists.flat().some(x => x.depot === "in");
+  const zones = [["", K.routes.filter(r => r.zone !== "пригород")], ["Пригородные", K.routes.filter(r => r.zone === "пригород")]].filter(([, rs]) => rs.length);
+  const compact = K.routes.length > 6;
   view.innerHTML = `
     <div class="eyebrow">Расписание</div>
     <h1 class="page-title" style="margin-top:8px">Когда придёт ${KINDS[sched.kind][1]}</h1>
-    <p class="lead-text">Время отправления на контрольных остановках по расписанию МУТТП. Сейчас в Смоленске ${now.hm}, ${WEEKDAYS[now.wd]}.</p>
+    <p class="lead-text">Время отправления с конечных и контрольных остановок по расписанию МУТТП. Сейчас в Смоленске ${now.hm}, ${WEEKDAYS[now.wd]}.</p>
     ${kinds.length > 1 ? `<div class="chips kinds" role="group" aria-label="Вид транспорта">${kinds.map(k =>
       `<button class="chip" data-kind="${k}" aria-pressed="${k === sched.kind}">${KINDS[k][0]}</button>`).join("")}</div>` : ""}
-    <div class="routes" role="group" aria-label="Маршрут">${K.routes.map(r =>
-      `<button class="rbtn" data-route="${esc(r.route)}" aria-pressed="${r.route === sched.route}"><span class="rnum">${esc(r.route)}</span><span class="rname">${esc(routeName(r))}</span></button>`).join("")}</div>
-    <div class="route-title">Маршрут ${esc(R.route)}: ${esc(routeName(R))}</div>
+    ${zones.map(([label, rs]) => `${label ? `<div class="flabel rzone">${label}</div>` : ""}<div class="routes${compact ? " compact" : ""}" role="group" aria-label="${label || "Маршрут"}">${rs.map(r =>
+      `<button class="rbtn" data-route="${esc(r.route)}" aria-pressed="${r.route === sched.route}" title="${esc(routeName(r))}"><span class="rnum">${esc(r.route)}</span><span class="rname">${esc(routeName(r))}</span></button>`).join("")}</div>`).join("")}
+    <div class="route-title${compact ? " show" : ""}">Маршрут ${esc(R.route)}: ${esc(routeName(R))}</div>
     <div class="chips days" role="group" aria-label="Дни">${DAYS.map(([k, label]) =>
       `<button class="chip" data-day="${k}" aria-pressed="${k === sched.day}">${label}${k === todayDay ? " · сегодня" : ""}</button>`).join("")}</div>
     ${K.error ? `<p class="sched-warn">Последняя проверка сайта МУТТП не удалась, показано расписание от ${msk(K.parsed_at)}.</p>`
       : Date.now() - new Date(K.checked_at) > 3 * 864e5 ? `<p class="sched-warn">Расписание не проверялось с ${msk(K.checked_at)}, сверьтесь с сайтом МУТТП.</p>` : ""}
-    <div class="dirs">${R.directions.map(d => dirHtml(d, now, today, tomorrowFirst)).join("")}</div>
-    <div class="legend">
-      ${notes.length ? `<span><i class="sme">15</i> ${esc(notes[0][1])}: сцепка из двух вагонов</span>` : ""}
-      <span><i class="dep">15<sup>д</sup></i> рейс в депо</span>
-    </div>
+    ${dayLists.some(l => l.length) ? `<div class="dirs">${R.directions.map(d => dirHtml(d, now, today, tomorrowFirst)).join("")}</div>`
+      : `<div class="empty">${sched.day === "weekends" ? "По выходным" : "По будням"} этот маршрут не ходит.</div>`}
+    ${notes.length || depot ? `<div class="legend">
+      ${notes.map(([k, text]) => `<span><i class="${MARK_CLS[k]}">15</i> ${esc(noteText(k, text))}</span>`).join("")}
+      ${depot ? `<span><i class="dep">15<sup>д</sup></i> рейс в депо</span>` : ""}
+    </div>` : ""}
     <p class="sched-src">Источник: <a href="${esc(K.source_url)}" target="_blank" rel="noopener">сайт МУТТП</a>. Проверено ${msk(K.checked_at)}${K.changed_at && new Date(K.checked_at) - new Date(K.changed_at) > 864e5 ? `, там оно не менялось с ${msk(K.changed_at).replace(/,.*/, "")}` : ""}.
       На остальных остановках ${KINDS[sched.kind][1]} проходит раньше или позже, на время в пути. Праздничные дни МУТТП отдельно не указывает.</p>`;
-  view.querySelectorAll("[data-kind]").forEach(b => b.addEventListener("click", () => { sched.kind = b.dataset.kind; sched.route = ""; renderSchedule(); }));
+  view.querySelectorAll("[data-kind]").forEach(b => b.addEventListener("click", () => {
+    sched.kind = b.dataset.kind; sched.route = "";
+    try { localStorage.setItem("sched-kind", sched.kind); } catch (e) {}
+    renderSchedule();
+  }));
   view.querySelectorAll("[data-route]").forEach(b => b.addEventListener("click", () => {
     sched.route = b.dataset.route;
     try { localStorage.setItem("route-" + sched.kind, sched.route); } catch (e) {}
@@ -611,7 +634,9 @@ function renderAbout() {
 
 let lastHash = "";
 function route() {
-  const h = location.hash.replace("#", ""), seq = ++routeSeq;
+  let h = location.hash.replace("#", "");
+  try { h = decodeURIComponent(h); } catch (e) {}  // «#raspisanie/bus-53д» arrives percent-encoded
+  const seq = ++routeSeq;
   if (!lastHash && h) state.scrollY = window.scrollY;
   if (/^p\d+$/.test(h)) {
     const id = h.slice(1), m = monthOf(id);
