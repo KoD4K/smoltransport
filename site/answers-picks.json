@@ -1,1 +1,117 @@
-{}
+{
+ "a20180904-1": {
+  "promised": "Передать Смоленской области 20 трамвайных вагонов 71‑619К, списанных «Мосгортрансом», до конца 2018 года.",
+  "outcome": "Все 20 пришли в срок: 26.12.2018 комитет по транспорту ответил, что вагоны поступили в МУТТП и работают на городских маршрутах.",
+  "status": "done",
+  "checked": "2026-10-17",
+  "order": 1,
+  "sources": [
+   {
+    "label": "Ответ комитета от 26.12.2018 в архиве",
+    "href": "#otvet/a20181226-1"
+   },
+   {
+    "label": "transphoto.org: вагоны 71‑619К по городам",
+    "href": "https://transphoto.org/model/6/?lang=ru"
+   }
+  ]
+ },
+ "a20180426-1": {
+  "promised": "По программе «Доступная среда» купить 8 троллейбусов в 2018 году, 9 в 2019-м и 5 трамваев в 2020-м, хотя денег в бюджете на них не было; по Стратегии до 2025 года пустить троллейбусы до Миловидово, по Краснинскому и Рославльскому шоссе, если найдутся деньги.",
+  "outcome": "Первые новые троллейбусы, 10 МАЗ, появились только в 2026 году. Вместо новых трамваев купили 8 новых кузовов на тележки старых вагонов, их везли в 2025–2026 годах. До Миловидово троллейбус так и не ходит.",
+  "status": "not",
+  "checked": "2026-10-17",
+  "order": 2,
+  "sources": [
+   {
+    "label": "SmolNarod, 02.08.2026: ещё 10 новых троллейбусов",
+    "href": "https://smolnarod.ru/news/smolensk-zakupit-eshhe-10-novyx-trollejbusov-s-avtonomnym-xodom/"
+   },
+   {
+    "label": "SmolNarod, 07.01.2026: кузова из Челябинской области",
+    "href": "https://smolnarod.ru/news/ocherednaya-obnova-dlya-tramvajno-trollejbusnogo-predpriyatiya-napravlyaetsya-v-smolensk-iz-chelyabinskoj-oblasti/"
+   },
+   {
+    "label": "МУТТП: маршруты троллейбусов и их конечные",
+    "href": "https://muttp.ru/passazhiram/raspisanie-dvizheniya-trollejbusov/"
+   }
+  ]
+ },
+ "a20200716-1": {
+  "promised": "До конца 2020 года привезти из Москвы ещё 30 троллейбусов 2009–2013 годов выпуска, сверх первых 30, которые уже передавались.",
+  "outcome": "Первые 30 пришли в конце 2020 года, вторая партия начала приходить только в мае 2021-го. По отчёту Главы города за 2022 год, из 30 троллейбусов, переданных в 2021 году, на линию вышли 22.",
+  "status": "partly",
+  "checked": "2026-10-17",
+  "order": 3,
+  "sources": [
+   {
+    "label": "Ответ комитета от 10.06.2021 о первой партии в архиве",
+    "href": "#otvet/a20210610-4"
+   },
+   {
+    "label": "Городской транспорт, 25.09.2020",
+    "href": "https://tr.ru/news/3709-na-zapad-trolleybusy-pereezzhayut-iz-moskvy-v-smolensk"
+   },
+   {
+    "label": "Отчёт Главы города Смоленска за 2022 год",
+    "href": "https://www.smoladmin.ru/files/1032/otchet2022.pdf"
+   },
+   {
+    "label": "transphoto.org: троллейбус № 055, в Смоленске с 27.05.2021",
+    "href": "https://transphoto.org/vehicle/225210/"
+   }
+  ]
+ },
+ "a20210601-1": {
+  "kind": "said",
+  "promised": "Пути на ул. Тенишевой требуют капремонта и не держат установленные 60 км/⁠ч, поэтому скорость трамваев ограничена 30 км/⁠ч.",
+  "outcome": "В 2024 году улицу отремонтировали с заменой трамвайных путей на всём протяжении, трамваи пошли в обычном режиме 03.12.2024.",
+  "status": "done",
+  "checked": "2026-10-17",
+  "order": 4,
+  "sources": [
+   {
+    "label": "Смоленская газета, 08.08.2024",
+    "href": "https://smolgazeta.ru/public/122277-na-vremya-remonta-ulicy-tenishevoy-v.html"
+   },
+   {
+    "label": "Смоленская газета, 03.12.2024",
+    "href": "https://smolgazeta.ru/daylynews/125115-v-smolenske-vozobnovilos-dvijenie.html"
+   }
+  ]
+ },
+ "a20191220-1": {
+  "promised": "Заменить трамвайные пути на ул. Николаева при её реконструкции, как решили на открытом обсуждении 13.12.2019.",
+  "outcome": "Пути заменили при капремонте улицы в 2020 году. Движение трамваев закрывали до 30 июля, а вернулось оно только 29.10.2020.",
+  "status": "done",
+  "checked": "2026-10-17",
+  "order": 5,
+  "sources": [
+   {
+    "label": "Смоленская газета, 07.04.2020",
+    "href": "https://smolgazeta.ru/public/74081-v-smolenske-prodoljaetsya-remont-ulicy.html"
+   },
+   {
+    "label": "Городской транспорт, 24.10.2020",
+    "href": "https://tr.ru/news/3732-smolenskie-tramvai-vozvrashchayutsya-k-vokzalu-no-eshchyo-ne-vse-remonty-zakoncheny"
+   }
+  ]
+ },
+ "a20210419-1": {
+  "promised": "Отремонтировать ул. Маяковского на всём протяжении до 30.11.2021, после чего улица станет пешеходной.",
+  "outcome": "Улицу отремонтировали в 2021 году и сделали пешеходной, лавочки и урны добавили в 2022 году.",
+  "status": "done",
+  "checked": "2026-10-17",
+  "order": 6,
+  "sources": [
+   {
+    "label": "АиФ-Смоленск, 15.10.2021",
+    "href": "https://smol.aif.ru/society/fonari_nachali_montirovat_na_ulice_mayakovskogo_v_smolenske"
+   },
+   {
+    "label": "АиФ-Смоленск, 13.07.2022",
+    "href": "https://smol.aif.ru/society/kulturnaya_zhizn_na_ulice_mayakovskogo_v_smolenske_poyavyatsya_novye_lavochki"
+   }
+  ]
+ }
+}

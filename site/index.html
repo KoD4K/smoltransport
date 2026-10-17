@@ -1113,6 +1113,7 @@ const ans = { q: "", qText: "", topic: "", sender: "", shown: PAGE, scrollY: 0 }
 const OTHER = "Другие ведомства";  // senders with a single letter share one filter entry
 let ANS = null, ANS_LOAD = null, ANS_ONE = new Set();
 const ansDate = a => a.date_approx === "year" ? `${a.date.slice(0, 4)} год` : human(a.date);
+const pickLead = p => p.kind === "said" ? "Писали" : "Обещали";  // "said": the letter stated a problem, not a promise
 const pickPill = k => { const [cls, label] = PICK[k] || PICK.unclear; return `<span class="pill ${cls}">${label}</span>`; };
 function loadAnswers() {
   if (ANS) return Promise.resolve(ANS);
@@ -1157,7 +1158,7 @@ function renderArchive(box) {
       ${picks.length ? `<h3 class="ans-h3">Что обещали и что вышло</h3>
       <div class="picks">${picks.map(a => `<a class="pick" href="#otvet/${esc(a.id)}">
           <small>${ansDate(a)} · ${esc(a.sender_short || a.sender)}</small>
-          <span><b>Обещали:</b> ${esc(a.pick.promised)}</span>
+          <span><b>${pickLead(a.pick)}:</b> ${esc(a.pick.promised)}</span>
           <span><b>Вышло:</b> ${esc(a.pick.outcome)}</span>
           ${pickPill(a.pick.status)}
         </a>`).join("")}</div>
@@ -1229,7 +1230,7 @@ function renderAnswer(id) {
     ${a.pick ? `<section class="section pick-box">
       <h2>Что обещали и что вышло</h2>
       ${pickPill(a.pick.status)}
-      <div class="prose"><p><b>Обещали:</b> ${esc(a.pick.promised)}</p><p><b>Вышло:</b> ${esc(a.pick.outcome)}</p></div>
+      <div class="prose"><p><b>${pickLead(a.pick)}:</b> ${esc(a.pick.promised)}</p><p><b>Вышло:</b> ${esc(a.pick.outcome)}</p></div>
       ${a.pick.checked ? `<p class="src">Проверено ${human(a.pick.checked)}</p>` : ""}
       ${(a.pick.sources || []).length ? `<div class="linklist">${a.pick.sources.map(x =>
         `<a href="${esc(x.href)}"${x.href.startsWith("#") ? "" : ' target="_blank" rel="noopener"'}>${esc(x.label || x.href)}</a>`).join("")}</div>` : ""}
