@@ -587,7 +587,7 @@ function renderSchedule(sub) {
   schedTimer = setInterval(() => { if (location.hash.startsWith("#raspisanie")) renderSchedule(); else clearInterval(schedTimer); }, 30000);
 }
 
-function renderRequests() {
+function renderRequests(sub) {
   setNav("zaprosy");
   view.innerHTML = `
     <div class="eyebrow">Запросы и ответы</div>
@@ -612,7 +612,146 @@ function renderRequests() {
           </tbody>
         </table>
       </div>
-    </section>`;
+    </section>
+    <section class="section" id="arhiv"><div class="loading">Загружаем архив ответов…</div></section>`;
+  const seq = routeSeq;
+  loadAnswers().then(list => {
+    const box = document.getElementById("arhiv");
+    if (seq !== routeSeq || !box) return;
+    if (!list || !list.length) { box.remove(); return; }  // no archive on the server yet
+    renderArchive(box);
+    if (sub === "arhiv") window.scrollTo(0, ans.scrollY || box.getBoundingClientRect().top + window.scrollY - 12);
+  });
+}
+
+// The archive of official answers the group posted in its VK album: data/answers.json is written on the Mac,
+// the scans (private persons' names blacked out) are in thumbs/answers on our server, never loaded from VK.
+const PICK = { done: ["ok", "Выполнено"], partly: ["wait", "Выполнено частично"], not: ["no", "Не выполнено"], unclear: ["wait", "Пока не ясно"] };
+const ans = { q: "", qText: "", topic: "", sender: "", shown: PAGE, scrollY: 0 };
+let ANS = null, ANS_LOAD = null;
+const ansDate = a => a.date_approx === "year" ? `${a.date.slice(0, 4)} год` : human(a.date);
+const pickPill = k => { const [cls, label] = PICK[k] || PICK.unclear; return `<span class="pill ${cls}">${label}</span>`; };
+function loadAnswers() {
+  if (ANS) return Promise.resolve(ANS);
+  return ANS_LOAD = ANS_LOAD || getJSON("data/answers.json").then(d => {
+    ANS = (d.letters || []).filter(a => a.id && a.date);
+    ANS.forEach(a => { a._hay = norm([a.sender, a.sender_short, a.signer, a.number, a.summary, ...(a.topics || [])].join(" ")); });
+    return ANS;
+  }, () => { ANS_LOAD = null; return null; });
+}
+function ansMatches(a) {
+  if (ans.topic && !(a.topics || []).includes(ans.topic)) return false;
+  if (ans.sender && a.sender_short !== ans.sender) return false;
+  return !ans.q || ans.q.split(" ").every(w => a._hay.includes(w));
+}
+function ansRow(a) {
+  const pg = (a.pages || [])[0];
+  return `<a class="ans" href="#otvet/${esc(a.id)}">
+      ${pg ? `<img src="${esc(pg.thumb || pg.full)}" alt="" loading="lazy">` : `<div class="nophoto">Скан</div>`}
+      <div>
+        <div class="meta"><span>${ansDate(a)}</span><span>${esc(a.sender_short || a.sender)}</span>${a.number ? `<span>№ ${esc(a.number)}</span>` : ""}</div>
+        <p class="ans-sum">${esc(a.summary)}</p>
+        ${a.pick ? pickPill(a.pick.status) : ""}
+      </div>
+    </a>`;
+}
+function renderArchive(box) {
+  const years = ANS.map(a => +a.date.slice(0, 4));
+  const count = k => ANS.reduce((m, a) => [].concat(a[k] || []).reduce((m2, v) => (m2[v] = (m2[v] || 0) + 1, m2), m), {});
+  const topics = Object.entries(count("topics")).sort((x, y) => y[1] - x[1]).map(([t]) => t);
+  const senders = Object.entries(count("sender_short")).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0], "ru")).map(([t]) => t);
+  const picks = ANS.filter(a => a.pick).sort((x, y) => (x.pick.order || 99) - (y.pick.order || 99));
+  box.innerHTML = `
+      <h2>Архив ответов ${Math.min(...years)}–${Math.max(...years)}</h2>
+      <p class="prose ans-intro">Ответы ведомств на обращения читателей и участников группы, которые мы публиковали в альбоме ВКонтакте. У каждого письма есть скан. Имена частных лиц закрыты.</p>
+      ${picks.length ? `<h3 class="ans-h3">Что обещали и что вышло</h3>
+      <div class="picks">${picks.map(a => `<a class="pick" href="#otvet/${esc(a.id)}">
+          <small>${ansDate(a)} · ${esc(a.sender_short || a.sender)}</small>
+          <span><b>Обещали:</b> ${esc(a.pick.promised)}</span>
+          <span><b>Вышло:</b> ${esc(a.pick.outcome)}</span>
+          ${pickPill(a.pick.status)}
+        </a>`).join("")}</div>
+      <h3 class="ans-h3">Все письма</h3>` : ""}
+      <div class="ans-tools">
+        <input id="ans-q" type="search" placeholder="Поиск по ответам" autocomplete="off" aria-label="Поиск по ответам" value="${esc(ans.qText)}">
+        <div class="chips" role="group" aria-label="Тема">${topics.map(t =>
+          `<button class="chip" type="button" data-topic="${esc(t)}" aria-pressed="${t === ans.topic}">${esc(t)}</button>`).join("")}</div>
+        <select id="ans-sender" aria-label="Ведомство"><option value="">Все ведомства</option>${senders.map(t =>
+          `<option${t === ans.sender ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>
+      </div>
+      <div class="feed-stats" id="ans-stats" hidden></div>
+      <div id="ans-list"></div>
+      <div class="more" id="ans-more"></div>`;
+  let t;
+  document.getElementById("ans-q").addEventListener("input", e => {
+    clearTimeout(t);
+    t = setTimeout(() => { ans.qText = e.target.value.trim(); ans.q = norm(ans.qText).replace(/\s+/g, " "); ans.shown = PAGE; renderAnsList(); }, 150);
+  });
+  box.querySelectorAll("[data-topic]").forEach(b => b.addEventListener("click", () => {
+    ans.topic = ans.topic === b.dataset.topic ? "" : b.dataset.topic; ans.shown = PAGE;
+    box.querySelectorAll("[data-topic]").forEach(x => x.setAttribute("aria-pressed", x.dataset.topic === ans.topic));
+    renderAnsList();
+  }));
+  document.getElementById("ans-sender").addEventListener("change", e => { ans.sender = e.target.value; ans.shown = PAGE; renderAnsList(); });
+  renderAnsList();
+}
+function renderAnsList() {
+  const list = ANS.filter(ansMatches), stats = document.getElementById("ans-stats");
+  const active = [ans.qText && `«${ans.qText}»`, ans.topic, ans.sender].filter(Boolean);
+  stats.innerHTML = active.length ? `Найдено: ${list.length} · ${esc(active.join(" · "))} <button class="reset-all" id="ans-reset" type="button">Сбросить</button>` : "";
+  stats.hidden = !active.length;
+  if (active.length) document.getElementById("ans-reset").addEventListener("click", () => {
+    Object.assign(ans, { q: "", qText: "", topic: "", sender: "", shown: PAGE });
+    renderArchive(document.getElementById("arhiv"));
+  });
+  document.getElementById("ans-list").innerHTML = list.slice(0, ans.shown).map(ansRow).join("")
+    || `<div class="empty">Ничего не нашлось. Попробуйте другое слово, тему или ведомство.</div>`;
+  const more = document.getElementById("ans-more");
+  more.innerHTML = list.length > ans.shown ? `<button type="button">Показать ещё</button>` : "";
+  if (list.length > ans.shown) more.firstChild.addEventListener("click", () => { ans.shown += PAGE; renderAnsList(); });
+}
+function renderAnswer(id) {
+  setNav("zaprosy");
+  if (!ANS) {
+    const seq = routeSeq;
+    view.innerHTML = `<div class="loading">Загружаем письмо…</div>`;
+    loadAnswers().then(() => { if (seq === routeSeq) ANS ? renderAnswer(id) : view.innerHTML = `<div class="empty">Не удалось загрузить архив ответов. Обновите страницу.</div>`; });
+    return;
+  }
+  const a = ANS.find(x => x.id === id);
+  const back = `<a class="back" href="#zaprosy/arhiv">${chev(-1, 16)} Все ответы</a>`;
+  if (!a) { view.innerHTML = `${back}<div class="empty">Такого письма в архиве нет.</div>`; return; }
+  const pages = a.pages || [];
+  view.innerHTML = `
+    ${back}
+    <div class="eyebrow">Ответ на обращение</div>
+    <h1 class="page-title" style="margin-top:8px">${esc(a.sender_short || a.sender)}, ${ansDate(a)}</h1>
+    <p class="lead-text">${esc(a.summary)}</p>
+    <section class="section">
+      <dl class="imprint">
+        <dt>Отправитель</dt><dd>${esc(a.sender)}</dd>
+        ${a.signer ? `<dt>Подписал</dt><dd>${esc(a.signer)}</dd>` : ""}
+        <dt>Дата</dt><dd>${a.date_approx === "year" ? `${a.date.slice(0, 4)} год, дата на скане закрыта` : human(a.date)}</dd>
+        ${a.number ? `<dt>Номер</dt><dd>${esc(a.number)}</dd>` : ""}
+        ${a.topics && a.topics.length ? `<dt>Тема</dt><dd>${esc(a.topics.join(", "))}</dd>` : ""}
+      </dl>
+    </section>
+    ${a.pick ? `<section class="section pick-box">
+      <h2>Что обещали и что вышло</h2>
+      ${pickPill(a.pick.status)}
+      <div class="prose"><p><b>Обещали:</b> ${esc(a.pick.promised)}</p><p><b>Вышло:</b> ${esc(a.pick.outcome)}</p></div>
+      ${a.pick.checked ? `<p class="src">Проверено ${human(a.pick.checked)}</p>` : ""}
+      ${(a.pick.sources || []).length ? `<div class="linklist">${a.pick.sources.map(x =>
+        `<a href="${esc(x.href)}"${x.href.startsWith("#") ? "" : ' target="_blank" rel="noopener"'}>${esc(x.label || x.href)}</a>`).join("")}</div>` : ""}
+    </section>` : ""}
+    <section class="section">
+      <h2>Скан письма</h2>
+      ${pages.map((pg, k) => `<figure class="scan"><a href="${esc(pg.full)}" target="_blank" rel="noopener">
+        <img src="${esc(pg.full)}" alt="Страница ${k + 1} из ${pages.length}" loading="${k ? "lazy" : "eager"}"${pg.w && pg.h ? ` width="${pg.w}" height="${pg.h}"` : ""}></a>
+        ${pages.length > 1 ? `<figcaption>Страница ${k + 1} из ${pages.length}</figcaption>` : ""}</figure>`).join("")}
+      ${a.redacted ? `<p class="src">Имя заявителя закрыто редакцией.</p>` : ""}
+    </section>
+    ${a.vk ? `<div class="article-foot"><a class="vk-link" href="${esc(a.vk)}" target="_blank" rel="noopener">Оригинал в альбоме ВКонтакте</a></div>` : ""}`;
 }
 
 function renderAbout() {
@@ -660,7 +799,8 @@ function route() {
     window.scrollTo(0, 0);
   }
   else if (h === "raspisanie" || h.startsWith("raspisanie/")) { const again = lastHash.startsWith("raspisanie"); renderSchedule(h.split("/")[1]); if (!again) window.scrollTo(0, 0); }
-  else if (h === "zaprosy") { renderRequests(); window.scrollTo(0, 0); }
+  else if (h === "zaprosy" || h === "zaprosy/arhiv") { window.scrollTo(0, 0); renderRequests(h.split("/")[1]); }
+  else if (h.startsWith("otvet/")) { if (lastHash.startsWith("zaprosy")) ans.scrollY = window.scrollY; renderAnswer(h.slice(6)); window.scrollTo(0, 0); }
   else if (h === "redakciya") { renderAbout(); window.scrollTo(0, 0); }
   else { renderFeed(); if (lastHash.startsWith("p")) window.scrollTo(0, state.scrollY); }
   lastHash = h;

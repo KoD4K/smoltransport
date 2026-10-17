@@ -176,3 +176,23 @@ nav.main a { padding: 7px 11px; }
 .hs-toggle { display: grid; }
 .hs-field { display: none; order: 3; width: 100%; }
 header.mast.searching .hs-field { display: block; }
+
+/* Archive of official answers (#zaprosy/arhiv, #otvet/<id>) */
+.pill.no { color: var(--no); }
+.ans-intro { color: var(--muted); margin: 0; }
+.ans-h3 { font-family: var(--display); font-weight: 700; font-size: var(--step-1); margin: 28px 0 12px; }
+.picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.pick { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px; border-radius: 14px; background: var(--surface); text-decoration: none; }
+.pick small { color: var(--muted); font-size: var(--step--1); }
+.pick:hover b { color: var(--accent); }
+.ans-tools { display: grid; gap: 12px; margin: 18px 0 8px; }
+.ans-tools input, .ans-tools select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: min(100%, 420px); }
+.ans-tools input:focus, .ans-tools select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ans { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 16px; padding-block: 16px; border-top: 1px solid var(--line); text-decoration: none; align-items: start; }
+.ans img, .ans .nophoto { width: 72px; height: auto; aspect-ratio: 240 / 340; object-fit: cover; border-radius: 4px; background: var(--surface); display: block; font-size: 0.75rem; }
+.ans:hover .ans-sum { color: var(--accent); }
+.ans-sum { margin: 6px 0 8px; }
+.pick-box .pill { margin-bottom: 4px; }
+.scan { margin: 0 0 18px; max-width: 880px; }
+.scan img { width: 100%; height: auto; display: block; border-radius: 6px; background: #fff; }
+.scan figcaption { color: var(--muted); font-size: var(--step--1); margin-top: 6px; }
