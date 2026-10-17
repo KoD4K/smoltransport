@@ -500,7 +500,7 @@ function dirHtml(d, now, today, tomorrowFirst) {
       <div class="dir-sum">${list.length === 1 ? `Один рейс в ${list[0].t}` : `Первый ${list[0].t} · последний ${list[list.length - 1].t}${gap ? ` · днём примерно ${gapText(gap)}` : ""}`}</div>
       <div class="hours">${hours.map(([h, xs]) => `<div class="hr"><b>${h}</b><span>${xs.map(x => {
         const cls = [live && minsOf(x.t) < now.min && "past", x.t === nextT && "next", MARK_CLS[x.mark], x.depot === "in" && "dep"].filter(Boolean).join(" ");
-        return `<i${cls ? ` class="${cls}"` : ""}>${x.t.slice(3)}${x.depot === "in" ? "<sup>д</sup>" : ""}</i>`;
+        return `<i${cls ? ` class="${cls}"` : ""}>${x.t.slice(3)}${x.mark ? `<sup>${esc(x.mark)}</sup>` : ""}${x.depot === "in" ? "<sup>д</sup>" : ""}</i>`;
       }).join("")}</span></div>`).join("")}</div>
     </section>`;
 }
@@ -514,7 +514,8 @@ function renderSchedule(sub) {
   }
   const kinds = Object.keys(KINDS).filter(k => SCHED.kinds[k] && SCHED.kinds[k].routes.length);
   if (!kinds.length) { view.innerHTML = `<div class="empty">Расписание пока не загружено.</div>`; return; }
-  const [subKind, subRoute] = (sub || "").split("-");
+  const cut = (sub || "").indexOf("-");
+  const [subKind, subRoute] = cut < 0 ? [sub || "", ""] : [sub.slice(0, cut), sub.slice(cut + 1)];
   if (kinds.includes(subKind)) sched.kind = subKind;
   if (!kinds.includes(sched.kind)) {
     let saved = "";
@@ -531,6 +532,11 @@ function renderSchedule(sub) {
   const now = moscowNow(), todayDay = dayOf(now.wd);
   if (!sched.day) sched.day = todayDay;
   const R = K.routes.find(r => r.route === sched.route);
+  // the address always names the route on screen, so it can be shared
+  const want = `#raspisanie/${sched.kind}-${sched.route}`;
+  let cur = location.hash;
+  try { cur = decodeURIComponent(cur); } catch (e) {}
+  if (cur !== want) history.replaceState(null, "", want);
   const today = sched.day === todayDay;
   const tomorrowDay = dayOf((now.wd + 1) % 7);
   const tomorrowFirst = d => ((d.days[tomorrowDay] || [])[0] || {}).t || "—";
@@ -556,7 +562,7 @@ function renderSchedule(sub) {
     ${dayLists.some(l => l.length) ? `<div class="dirs">${R.directions.map(d => dirHtml(d, now, today, tomorrowFirst)).join("")}</div>`
       : `<div class="empty">${sched.day === "weekends" ? "По выходным" : "По будням"} этот маршрут не ходит.</div>`}
     ${notes.length || depot ? `<div class="legend">
-      ${notes.map(([k, text]) => `<span><i class="${MARK_CLS[k]}">15</i> ${esc(noteText(k, text))}</span>`).join("")}
+      ${notes.map(([k, text]) => `<span><i class="${MARK_CLS[k]}">15<sup>${esc(k)}</sup></i> ${esc(noteText(k, text))}</span>`).join("")}
       ${depot ? `<span><i class="dep">15<sup>д</sup></i> рейс в депо</span>` : ""}
     </div>` : ""}
     <p class="sched-src">Источник: <a href="${esc(K.source_url)}" target="_blank" rel="noopener">сайт МУТТП</a>. Проверено ${msk(K.checked_at)}${K.changed_at && new Date(K.checked_at) - new Date(K.changed_at) > 864e5 ? `, там оно не менялось с ${msk(K.changed_at).replace(/,.*/, "")}` : ""}.
