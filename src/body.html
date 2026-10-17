@@ -193,7 +193,7 @@ function itemHtml(p, lead) {
   return `<a class="item${lead ? " lead" : ""}" href="#p${p.id}">
       ${pic}
       <div class="item-body">
-        <div class="meta"><span>${human(p.date)}</span>${p.np > 1 ? `<span>${p.np} фото</span>` : ""}${p.nv ? `<span>${p.nv > 1 ? p.nv + " видео" : "видео"}</span>` : ""}</div>
+        <div class="meta"><span>${human(p.date)}</span>${p.np > 1 ? `<span>${p.np} ${plural(p.np, "изображение", "изображения", "изображений")}</span>` : ""}${p.nv ? `<span>${p.nv > 1 ? p.nv + " видео" : "видео"}</span>` : ""}</div>
         <h2 class="item-title${p.title.length > 70 ? " long" : ""}">${esc(p.title)}</h2>
         ${p.lede ? `<p class="item-lede">${esc(p.lede)}</p>` : ""}
         ${tagsHtml(p.tags, 5)}
@@ -348,14 +348,14 @@ function renderPost(p) {
         ${v.title ? `<div class="vtitle">${esc(v.title)}</div>` : ""}
       </div>`).join("")}
       ${n ? `<div class="carousel">
-        <div class="track" id="track" tabindex="0" aria-label="Фото поста">
-          ${p.photos.map((ph, k) => `<div class="slide">${imgTag(ph, "", k === 0, `Фото ${k + 1} из ${n}`)}</div>`).join("")}
+        <div class="track" id="track" tabindex="0" aria-label="Изображения поста">
+          ${p.photos.map((ph, k) => `<div class="slide">${imgTag(ph, "", k === 0, `Изображение ${k + 1} из ${n}`)}</div>`).join("")}
         </div>
         ${n > 1 ? `<div class="cbar">
           <span class="counter" id="counter"><em>1</em> / ${n}</span>
           <div class="cbtns">
-            <button class="cbtn" id="prev" aria-label="Предыдущее фото">${chev(-1)}</button>
-            <button class="cbtn" id="next" aria-label="Следующее фото">${chev(1)}</button>
+            <button class="cbtn" id="prev" aria-label="Предыдущее изображение">${chev(-1)}</button>
+            <button class="cbtn" id="next" aria-label="Следующее изображение">${chev(1)}</button>
           </div>
         </div>` : ""}
       </div>` : ""}
