@@ -182,7 +182,7 @@ def build(r, text, archive):
     if hide.get("videos") == "vk":
         vids = [dict(v, cover="", embed="", vk_only=True) for v in vids]
     nofeed, lede, dropped = False, None, ""
-    if not paras and vids:
+    if not paras and vids and not r["photos"]:  # a photo with a bare video is still a photo of the day
         title, body = vids[0]["title"] or "Видео", paras
         nofeed = not vids[0]["title"]  # a bare video with no words reads as noise in the feed
     elif not paras or (len(flat) < 70 and re.search(r"#фото", flat, re.I)):  # «Автор #фото: …» is a photo of the day
