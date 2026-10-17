@@ -9,6 +9,8 @@ videos.jsonl        optional: the posts' videos
 covers.json         optional: {post id: {"full", "thumb"}} feed pictures without text, made on the Mac from
                     a post folder's превью-сайта.jpg, so a carousel's headline cover doesn't repeat the title.
                     Older carousels have theirs in site/media/covers/<id>-<hash>.jpg (and -t.jpg); covers.json wins.
+vcovers.json        optional: {video id: path under thumbs/} video covers saved on our server, so readers' browsers
+                    don't fetch them from VK's CDN.
 """
 import json, re, os, sys, html
 from urllib.parse import unquote, urlparse, parse_qs
@@ -24,6 +26,7 @@ if os.path.isdir(_cov):
             COVERS[m.group(1)] = {"full": "media/covers/" + f, "thumb": "media/covers/" + f[:-4] + "-t.jpg"}
 if len(sys.argv) > 6 and os.path.exists(sys.argv[6]):
     COVERS.update(json.load(open(sys.argv[6], encoding="utf-8")))
+VCOVERS = json.load(open(sys.argv[7], encoding="utf-8")) if len(sys.argv) > 7 and os.path.exists(sys.argv[7]) else {}
 rows = json.load(open(SRC, encoding="utf-8"))
 DEFAULT_VTITLE = re.compile(r"^\s*((clip|video) by\b|.*\.(mp4|mov|avi|mkv|3gp|webm)\s*$|(vid|img|mov|video)[_-]?\d|\S{30,}\s*$)", re.I)  # VK defaults and file names, not real headings
 rich = {}
@@ -39,7 +42,7 @@ if VIDS and os.path.exists(VIDS):
         if l.strip():
             v = json.loads(l)
             videos[v["post_id"].split("_")[1]] = [
-                {"id": x.get("id", ""), "cover": html.unescape(x.get("cover") or ""), "duration": x.get("duration") or "",
+                {"id": x.get("id", ""), "cover": VCOVERS.get(x.get("id", "")) or html.unescape(x.get("cover") or ""), "duration": x.get("duration") or "",
                  "title": "" if DEFAULT_VTITLE.match(x.get("title") or "") else (x.get("title") or ""),
                  "embed": html.unescape(x.get("embed") or "")} for x in v.get("videos", [])]
 HIDE = {}  # photos and videos kept off the 12+ site
