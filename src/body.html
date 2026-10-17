@@ -257,6 +257,7 @@ function renderFeed() {
           Фильтр <span class="f-count" id="f-count" hidden></span>
         </button>
       </div>
+      ${mtabs("feed")}
       <div class="fpanel" id="fpanel"${state.panel ? "" : " hidden"}>
         <div class="fgroup">
           <div class="flabel">Период</div>
@@ -329,6 +330,67 @@ hsToggle.addEventListener("click", () => {
   hsToggle.setAttribute("aria-expanded", String(open));
   if (open) qEl.focus();
 });
+
+// Our own proposals (platform schemes and the like): editorial content kept in the repo, site/proposals.json and
+// site/media/proposals/. The «Предложения» tab under «Материалы» shows only once there is at least one.
+let PROP = [];
+const PROP_LOAD = getJSON("proposals.json").then(d => { PROP = (d.items || []).filter(x => x.id && x.title); }, () => {});
+const mtabs = cur => PROP.length ? `<div class="mtabs" aria-label="Материалы">
+    <a href="#"${cur === "feed" ? ' aria-current="page"' : ""}>Все материалы</a>
+    <a href="#predlozheniya"${cur === "prop" ? ' aria-current="page"' : ""}>Предложения</a>
+  </div>` : "";
+function propCard(x) {
+  const im = (x.images || [])[0];
+  return `<a class="item" href="#predlozhenie/${esc(x.id)}">
+      ${im ? `<img src="${esc(im.thumb || im.src)}" alt="" loading="lazy" width="800" height="600">` : `<div class="nophoto"></div>`}
+      <div class="item-body">
+        <div class="meta">${x.place ? `<span>${esc(x.place)}</span>` : ""}${x.date ? `<span>${human(x.date)}</span>` : ""}</div>
+        <h2 class="item-title${x.title.length > 70 ? " long" : ""}">${esc(x.title)}</h2>
+        ${x.lead ? `<p class="item-lede">${esc(x.lead)}</p>` : ""}
+      </div>
+    </a>`;
+}
+function renderProposals() {
+  setNav("feed");
+  const groups = [];
+  PROP.forEach(x => { const g = groups.find(g => g.topic === (x.topic || "")); g ? g.items.push(x) : groups.push({ topic: x.topic || "", items: [x] }); });
+  view.innerHTML = `
+    <div class="feed-head">
+      <div class="fh-row"><div class="eyebrow">Материалы</div></div>
+      ${mtabs("prop")}
+    </div>
+    <h1 class="page-title">Наши предложения</h1>
+    <p class="lead-text">Что, по-нашему, можно сделать лучше в городском транспорте Смоленска. Схемы рисуем по нормам и документам города, источники — под каждым предложением.</p>
+    ${groups.length ? groups.map(g => `<section class="section">
+      ${g.topic && groups.length > 1 ? `<h2>${esc(g.topic)}</h2>` : ""}
+      <div class="feed">${g.items.map(propCard).join("")}</div>
+    </section>`).join("") : `<div class="empty">Предложений пока нет.</div>`}`;
+}
+function renderProposal(id) {
+  setNav("feed");
+  const x = PROP.find(y => y.id === id);
+  const back = `<a class="back" href="#predlozheniya">${chev(-1, 16)} Все предложения</a>`;
+  if (!x) { view.innerHTML = `${back}<div class="empty">Такого предложения нет.</div>`; return; }
+  const ims = x.images || [];
+  view.innerHTML = `
+    ${back}
+    <article>
+      <div class="article-head">
+        <div class="eyebrow">Предложение${x.topic ? ` · ${esc(x.topic)}` : ""}</div>
+        <h1 class="page-title${x.title.length > 70 ? " long" : ""}" style="margin-top:8px">${esc(x.title)}</h1>
+        ${x.lead ? `<p class="lead-text">${esc(x.lead)}</p>` : ""}
+      </div>
+      ${ims.map((im, k) => `<figure class="prop-fig"><a href="${esc(im.src)}" target="_blank" rel="noopener">
+        <img src="${esc(im.src)}" alt="${esc(im.alt || x.title)}" loading="${k ? "lazy" : "eager"}"${im.w && im.h ? ` width="${im.w}" height="${im.h}"` : ""}></a>
+        ${im.caption ? `<figcaption>${esc(im.caption)}</figcaption>` : ""}</figure>`).join("")}
+      ${(x.body || []).length ? `<div class="text">${x.body.map(t => `<p>${esc(t)}</p>`).join("")}</div>` : ""}
+      <div class="article-foot">
+        ${(x.sources || []).length ? `<div class="linklist"><span class="src">Источники</span>${x.sources.map(l =>
+          `<a href="${esc(l.href)}"${l.href.startsWith("#") ? "" : ' target="_blank" rel="noopener"'}>${esc(l.label || l.href)}</a>`).join("")}</div>` : ""}
+        ${x.vk ? `<a class="vk-link" href="${esc(x.vk)}" target="_blank" rel="noopener">Обсудить в группе ВКонтакте ${chev(1, 16)}</a>` : ""}
+      </div>
+    </article>`;
+}
 
 function renderPost(p) {
   setNav("feed");
@@ -814,6 +876,8 @@ function route() {
   else if (h === "zaprosy" || h === "zaprosy/arhiv") { window.scrollTo(0, 0); renderRequests(h.split("/")[1]); }
   else if (h.startsWith("otvet/")) { if (lastHash.startsWith("zaprosy")) ans.scrollY = window.scrollY; renderAnswer(h.slice(6)); window.scrollTo(0, 0); }
   else if (h === "redakciya") { renderAbout(); window.scrollTo(0, 0); }
+  else if (h === "predlozheniya") { renderProposals(); window.scrollTo(0, 0); }
+  else if (h.startsWith("predlozhenie/")) { renderProposal(h.slice(13)); window.scrollTo(0, 0); }
   else { renderFeed(); if (lastHash.startsWith("p")) window.scrollTo(0, state.scrollY); }
   lastHash = h;
 }
@@ -847,6 +911,8 @@ getJSON("data/index/meta.json").then(meta => {
   const withFeed = YEARS.filter(y => y.feed);
   NEWEST = withFeed[0].last; OLDEST = withFeed[withFeed.length - 1].first;
   CHIPS = RUBRICS.filter(([k]) => (RUBRIC_N[lower(k)] || 0) >= 5);
+  return PROP_LOAD;
+}).then(() => {
   window.addEventListener("hashchange", route);
   route();
 }).catch(() => {

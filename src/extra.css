@@ -205,3 +205,13 @@ header.mast.searching .hs-field { display: block; }
 .scan { margin: 0 0 18px; max-width: 880px; }
 .scan img { max-width: 100%; height: auto; display: block; border-radius: 6px; background: #fff; }  /* small 2015 scans are not blown up */
 .scan figcaption { color: var(--muted); font-size: var(--step--1); margin-top: 6px; }
+
+/* «Материалы»: all posts / our proposals (#predlozheniya, #predlozhenie/<id>) */
+.mtabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); }
+.mtabs a { padding: 2px 0 10px; color: var(--muted); text-decoration: none; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.mtabs a:hover { color: var(--fg); }
+.mtabs a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--accent); }
+.item .nophoto { aspect-ratio: 4 / 3; border-radius: 6px; background: var(--surface); }
+.prop-fig { margin: 24px 0 0; }
+.prop-fig img { max-width: 100%; height: auto; display: block; border-radius: 6px; }
+.prop-fig figcaption { color: var(--muted); font-size: var(--step--1); margin-top: 6px; }
