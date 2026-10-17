@@ -141,8 +141,8 @@ nav.main { margin-left: auto; }
 .hr b { flex: none; width: 2ch; font: 700 1rem/1.6 var(--display); font-variant-numeric: tabular-nums; }
 .hr span { display: flex; flex-wrap: wrap; gap: 2px 4px; }
 .hours i, .legend i { font-style: normal; font-variant-numeric: tabular-nums; line-height: 1.6; padding: 0 5px; border-radius: 6px; }
-.hours i.past { color: var(--muted); opacity: .55; }
-.hours i.next { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.hours i.past, .legend i.past { color: var(--muted); opacity: .55; }
+.hours i.next, .legend i.next { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
 .hours i.m1, .legend i.m1 { box-shadow: inset 0 0 0 1.5px var(--accent); }
 .hours i.m2, .legend i.m2 { outline: 1.5px dashed var(--accent); outline-offset: -1.5px; }
 .hours i.dep, .legend i.dep { color: var(--muted); }

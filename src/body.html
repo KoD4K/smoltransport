@@ -544,6 +544,9 @@ function renderSchedule(sub) {
   const used = new Set(dayLists.flat().map(x => x.mark).filter(Boolean));
   const notes = Object.entries(R.notes || K.notes || {}).filter(([k]) => used.has(k) && MARK_CLS[k]);
   const depot = dayLists.flat().some(x => x.depot === "in");
+  const live = today && now.min >= 180;  // the same rule dirHtml uses to grey out and highlight times
+  const hasPast = live && dayLists.flat().some(x => minsOf(x.t) < now.min);
+  const hasNext = live && dayLists.flat().some(x => minsOf(x.t) >= now.min);
   const zones = [["", K.routes.filter(r => r.zone !== "пригород")], ["Пригородные", K.routes.filter(r => r.zone === "пригород")]].filter(([, rs]) => rs.length);
   const compact = K.routes.length > 6;
   view.innerHTML = `
@@ -561,7 +564,9 @@ function renderSchedule(sub) {
       : Date.now() - new Date(K.checked_at) > 3 * 864e5 ? `<p class="sched-warn">Расписание не проверялось с ${msk(K.checked_at)}, сверьтесь с сайтом МУТТП.</p>` : ""}
     ${dayLists.some(l => l.length) ? `<div class="dirs">${R.directions.map(d => dirHtml(d, now, today, tomorrowFirst)).join("")}</div>`
       : `<div class="empty sched-empty">${sched.day === "weekends" ? "По выходным" : "По будням"} этот маршрут не ходит.</div>`}
-    ${notes.length || depot ? `<div class="legend">
+    ${notes.length || depot || hasPast || hasNext ? `<div class="legend">
+      ${hasNext ? `<span><i class="next">15</i> ближайший рейс</span>` : ""}
+      ${hasPast ? `<span><i class="past">15</i> рейс уже ушёл</span>` : ""}
       ${notes.map(([k, text]) => `<span><i class="${MARK_CLS[k]}">15<sup>${esc(k)}</sup></i> ${esc(noteText(k, text))}</span>`).join("")}
       ${depot ? `<span><i class="dep">15<sup>д</sup></i> рейс в депо</span>` : ""}
     </div>` : ""}
