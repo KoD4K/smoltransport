@@ -194,5 +194,5 @@ header.mast.searching .hs-field { display: block; }
 .ans-sum { margin: 6px 0 8px; }
 .pick-box .pill { margin-bottom: 4px; }
 .scan { margin: 0 0 18px; max-width: 880px; }
-.scan img { width: 100%; height: auto; display: block; border-radius: 6px; background: #fff; }
+.scan img { max-width: 100%; height: auto; display: block; border-radius: 6px; background: #fff; }  /* small 2015 scans are not blown up */
 .scan figcaption { color: var(--muted); font-size: var(--step--1); margin-top: 6px; }
