@@ -7,14 +7,23 @@ links-2026.jsonl    the same posts re-read with links kept in the text as ⟦hre
 archive-linked.json older posts that 2026 posts link to (shown as pages, not in the feed)
 videos.jsonl        optional: the posts' videos
 covers.json         optional: {post id: {"full", "thumb"}} feed pictures without text, made on the Mac from
-                    a post folder's превью-сайта.jpg, so a carousel's headline cover doesn't repeat the title
+                    a post folder's превью-сайта.jpg, so a carousel's headline cover doesn't repeat the title.
+                    Older carousels have theirs in site/media/covers/<id>-<hash>.jpg (and -t.jpg); covers.json wins.
 """
 import json, re, os, sys, html
 from urllib.parse import unquote, urlparse, parse_qs
 
 SRC, RICH, ARCH, OUT = sys.argv[1:5]
 VIDS = sys.argv[5] if len(sys.argv) > 5 else ""
-COVERS = json.load(open(sys.argv[6], encoding="utf-8")) if len(sys.argv) > 6 and os.path.exists(sys.argv[6]) else {}
+COVERS = {}
+_cov = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "site", "media", "covers")
+if os.path.isdir(_cov):
+    for f in sorted(os.listdir(_cov)):
+        m = re.match(r"^(\d+)-[0-9a-f]{8}\.jpg$", f)
+        if m and os.path.exists(os.path.join(_cov, f[:-4] + "-t.jpg")):
+            COVERS[m.group(1)] = {"full": "media/covers/" + f, "thumb": "media/covers/" + f[:-4] + "-t.jpg"}
+if len(sys.argv) > 6 and os.path.exists(sys.argv[6]):
+    COVERS.update(json.load(open(sys.argv[6], encoding="utf-8")))
 rows = json.load(open(SRC, encoding="utf-8"))
 DEFAULT_VTITLE = re.compile(r"^\s*((clip|video) by\b|.*\.(mp4|mov|avi|mkv|3gp|webm)\s*$|(vid|img|mov|video)[_-]?\d|\S{30,}\s*$)", re.I)  # VK defaults and file names, not real headings
 rich = {}
