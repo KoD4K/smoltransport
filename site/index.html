@@ -830,7 +830,7 @@ const mtabs = cur => PROP.length ? `<div class="mtabs" aria-label="Матери�
     <a href="#predlozheniya"${cur === "prop" ? ' aria-current="page"' : ""}>Предложения</a>
   </div>` : "";
 function propCard(x) {
-  const im = (x.images || [])[0];
+  const ims = x.images || [], im = ims.find(i => i.card) || ims[0];   // "card": true picks the list picture
   return `<a class="item" href="#predlozhenie/${esc(x.id)}">
       ${im ? `<img src="${esc(im.thumb || im.src)}" alt="" loading="lazy" width="800" height="600">` : `<div class="nophoto"></div>`}
       <div class="item-body">
@@ -850,7 +850,7 @@ function renderProposals() {
       ${mtabs("prop")}
     </div>
     <h1 class="page-title">Наши предложения</h1>
-    <p class="lead-text">Что, по-нашему, можно сделать лучше в городском транспорте Смоленска. Схемы рисуем по нормам и документам города, источники — под каждым предложением.</p>
+    <p class="lead-text">Что, по-нашему, можно сделать лучше в городском транспорте Смоленска. Каждое предложение показываем на фото или схеме и объясняем, зачем оно.</p>
     ${groups.length ? groups.map(g => `<section class="section">
       ${g.topic && groups.length > 1 ? `<h2>${esc(g.topic)}</h2>` : ""}
       <div class="feed">${g.items.map(propCard).join("")}</div>
