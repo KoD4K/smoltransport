@@ -10,6 +10,6 @@
   - `data/posts.json` — всё одним файлом, для старой версии страницы.
   Полноразмерные фото берутся с серверов ВК, превью лежат в `thumbs/`. Что не показываем на сайте 12+, записано в `src/inputs/hide-12plus.json`.
 - `src/head.html`, `src/base.css`, `src/extra.css`, `src/body.html` — части страницы; `sh src/build.sh` собирает из них `site/index.html` (код для smoltransport.ru).
-- `site/` — код сайта для сервера smoltransport.ru (`index.html`, `media/`). Данные (`data/`, `thumbs/`) сервер получает с Mac, в репозитории их нет. Для проверки на своём компьютере собирайте данные gen3.py в отдельную папку.
+- `site/` — код сайта для сервера smoltransport.ru (`index.html`, `media/`). `site/featured.json` — пост, который лента показывает первым с большой картинкой из `site/media/featured/` (до даты `until` по Москве; пока поста нет в данных, ссылка ведёт на ВК). Данные (`data/`, `thumbs/`) сервер получает с Mac, в репозитории их нет. Для проверки на своём компьютере собирайте данные gen3.py в отдельную папку.
 - `server/search/` — поиск по всем постам для smoltransport.ru (`search.py` читает `data/m/`, служба systemd, настройка nginx). Тоже без журнала запросов. Без него (github.io) страница ищет по карточкам ленты в браузере.
 - `server/views/` — счётчик просмотров постов для smoltransport.ru (`views.py`, служба systemd, настройка nginx). Ничего о читателе не хранит: ни cookie, ни адресов, ни журнала запросов. На github.io счётчика нет.

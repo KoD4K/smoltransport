@@ -215,3 +215,7 @@ header.mast.searching .hs-field { display: block; }
 .prop-fig { margin: 24px 0 0; }
 .prop-fig img { max-width: 100%; height: auto; display: block; border-radius: 6px; }
 .prop-fig figcaption { color: var(--muted); font-size: var(--step--1); margin-top: 6px; }
+/* a featured post with a big picture of its own on top of the feed (site/featured.json) */
+.item.lead.hero { grid-template-columns: minmax(0, 1fr); gap: 18px; padding-bottom: 32px; }
+.item.hero .hero-img { width: 100%; height: auto; border-radius: 8px; display: block; background: var(--surface); }
+.item.hero .item-body { padding-top: 0; }
