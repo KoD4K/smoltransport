@@ -577,6 +577,37 @@ function plainRich(s) {
     .replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https?:\/\/(www\.)?/, "")}</a>`)
     .replace(/(^|[\s(«"])#([\wА-Яа-яЁё]+)/g, '$1<span class="ht">#$2</span>');
 }
+// VK can't put a link to an outside site on words, so posts give the address in brackets after the phrase, «…конкурс
+// (https://…)» (Evgenii 17.10). On the site the phrase itself is the link and the bare address goes (Evgenii 20.10, a rule
+// for every post): the phrase is the clause before the brackets, from the last «. : ; , —» or the paragraph start, and
+// site/link-anchors.json {"<post id>": {"<address>": "phrase"}} names a shorter one where that clause is too long.
+let ANCHORS = {};  // loaded with featured.json below
+const ADDR = /\s*\(\s*(?:⟦([^|⟧]+)\|((?:https?:\/\/|vk\.cc\/)[^⟧\s]*)⟧|((?:https?:\/\/|vk\.cc\/)[^\s)]+))\s*\)/g;
+const noAddr = s => s.replace(/\s*\((?:https?:\/\/|vk\.cc\/)[^\s)]+\)/g, "");  // feed teasers: the address alone says nothing
+function inlineLinks(s, id) {
+  const named = ANCHORS[id] || {};
+  let out = "", last = 0;
+  for (const m of s.matchAll(ADDR)) {
+    const before = s.slice(last, m.index);
+    let href = m[1] || m[3];
+    if (!/^https?:/.test(href)) href = "https://" + href;
+    const shown = m[2] || m[3], want = named[href] || named[shown] || named[href.replace(/^https?:\/\//, "")];
+    let start = want ? before.lastIndexOf(want) : -1;
+    if (start < 0) {
+      start = 0;
+      for (const d of [". ", "! ", "? ", ": ", "; ", ", ", " — ", " – ", "\n", "⟧", "«"]) {
+        const k = before.lastIndexOf(d);
+        if (k >= 0 && k + d.length > start) start = k + d.length;
+      }
+    }
+    const phrase = (want && before.lastIndexOf(want) >= 0 ? want : before.slice(start)).trim();
+    if (!phrase || phrase.includes("⟦")) { out += before + m[0]; last = m.index + m[0].length; continue; }
+    const at = before.lastIndexOf(phrase);
+    out += before.slice(0, at) + `⟦${href}|${phrase}⟧` + before.slice(at + phrase.length);
+    last = m.index + m[0].length;
+  }
+  return out + s.slice(last);
+}
 function richText(s) {
   let html = "", last = 0;
   for (const m of s.matchAll(MARK)) {
@@ -689,7 +720,7 @@ function itemHtml(p, lead) {
       <div class="item-body">
         <div class="meta"><span>${human(p.date)}</span>${p.np > 1 ? `<span>${p.np} ${plural(p.np, "изображение", "изображения", "изображений")}</span>` : ""}${p.nv ? `<span>${p.nv > 1 ? p.nv + " видео" : "видео"}</span>` : ""}</div>
         <h2 class="item-title${p.title.length > 70 ? " long" : ""}">${esc(p.title)}</h2>
-        ${p.lede ? `<p class="item-lede">${esc(p.lede)}</p>` : ""}
+        ${p.lede ? `<p class="item-lede">${esc(noAddr(p.lede))}</p>` : ""}
         ${tagsHtml(p.tags, 5)}
       </div>
     </a>`;
@@ -699,6 +730,7 @@ function itemHtml(p, lead) {
 // {"items": [{"id", "until": "YYYY-MM-DD" (Moscow, last day shown), "image": {"src", "w", "h", "srcset"}, "alt",
 // "date", "title", "lede", "url", "post_photo"}]}; date, title, lede and url are used only until the post is in the site's
 // data; "post_photo": N puts our copy of the picture in place of the post's photo N on its page (VK's copy of 138942 is broken).
+const ANCHORS_LOAD = getJSON("link-anchors.json").then(d => { ANCHORS = d; }, () => {});
 let FEAT = [], FEAT_ALL = [];
 const FEAT_LOAD = getJSON("featured.json").then(d => {
   const today = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
@@ -712,7 +744,7 @@ function heroHtml(f) {
       <div class="item-body">
         ${date ? `<div class="meta"><span>${human(date)}</span></div>` : ""}
         <h2 class="item-title">${esc(title)}</h2>
-        ${lede ? `<p class="item-lede">${esc(lede)}</p>` : ""}
+        ${lede ? `<p class="item-lede">${esc(noAddr(lede))}</p>` : ""}
         ${c ? tagsHtml(c.tags, 5) : ""}
       </div>
     </a>`;
@@ -940,7 +972,7 @@ function renderPost(p) {
           </div>
         </div>` : ""}
       </div>` : ""}
-      <div class="text">${p.body.map(t => `<p>${richText(t)}</p>`).join("")}</div>
+      <div class="text">${p.body.map(t => `<p>${richText(inlineLinks(t, p.id))}</p>`).join("")}</div>
       <div class="article-foot">
         ${tagsHtml(p.tags)}
         ${p.links.length ? `<div class="linklist"><span class="src">Ссылки из поста</span>${p.links.map(l => `<a href="${esc(l.href)}"${l.pid ? "" : ' target="_blank" rel="noopener"'}>${esc(l.label)}</a>`).join("")}</div>` : ""}
@@ -1430,7 +1462,7 @@ getJSON("data/index/meta.json").then(meta => {
   const withFeed = YEARS.filter(y => y.feed);
   NEWEST = withFeed[0].last; OLDEST = withFeed[withFeed.length - 1].first;
   CHIPS = RUBRICS.filter(([k]) => (RUBRIC_N[lower(k)] || 0) >= 5);
-  return Promise.all([PROP_LOAD, FEAT_LOAD]);
+  return Promise.all([PROP_LOAD, FEAT_LOAD, ANCHORS_LOAD]);
 }).then(() => {
   window.addEventListener("hashchange", route);
   route();
