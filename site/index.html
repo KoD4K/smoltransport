@@ -697,11 +697,13 @@ function itemHtml(p, lead) {
 
 // A post shown first with a big picture of its own (Evgenii 20.10.2026: the tram's 125 years), site/featured.json:
 // {"items": [{"id", "until": "YYYY-MM-DD" (Moscow, last day shown), "image": {"src", "w", "h", "srcset"}, "alt",
-// "date", "title", "lede", "url"}]}; date, title, lede and url are used only until the post is in the site's data.
-let FEAT = [];
+// "date", "title", "lede", "url", "post_photo"}]}; date, title, lede and url are used only until the post is in the site's
+// data; "post_photo": N puts our copy of the picture in place of the post's photo N on its page (VK's copy of 138942 is broken).
+let FEAT = [], FEAT_ALL = [];
 const FEAT_LOAD = getJSON("featured.json").then(d => {
   const today = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
-  FEAT = (d.items || []).filter(x => x.id && x.image && x.image.src && (!x.until || today <= x.until));
+  FEAT_ALL = (d.items || []).filter(x => x.id && x.image && x.image.src);
+  FEAT = FEAT_ALL.filter(x => !x.until || today <= x.until);
 }, () => {});
 function heroHtml(f) {
   const c = CARD[f.id], im = f.image, title = c ? c.title : f.title || "", lede = c ? c.lede : f.lede || "", date = c ? c.date : f.date;
@@ -909,7 +911,9 @@ function renderProposal(id) {
 
 function renderPost(p) {
   setNav("feed");
-  const n = p.photos.length;
+  const own = FEAT_ALL.find(x => x.id === p.id && x.post_photo), mine = own && { full: own.image.src, thumb: (own.image.srcset || "").split(" ")[0] || own.image.src };
+  const photos = own ? (p.photos.length ? p.photos.map((ph, k) => k === own.post_photo - 1 ? mine : ph) : [mine]) : p.photos;
+  const n = photos.length;
   view.innerHTML = `
     <a class="back" href="#">${chev(-1, 16)} Все материалы</a>
     <article>
@@ -926,7 +930,7 @@ function renderPost(p) {
       </div>`).join("")}
       ${n ? `<div class="carousel">
         <div class="track" id="track" tabindex="0" aria-label="Изображения поста">
-          ${p.photos.map((ph, k) => `<div class="slide">${imgTag(ph, "", k === 0, `Изображение ${k + 1} из ${n}`)}</div>`).join("")}
+          ${photos.map((ph, k) => `<div class="slide">${imgTag(ph, "", k === 0, `Изображение ${k + 1} из ${n}`)}</div>`).join("")}
         </div>
         ${n > 1 ? `<div class="cbar">
           <span class="counter" id="counter"><em>1</em> / ${n}</span>
