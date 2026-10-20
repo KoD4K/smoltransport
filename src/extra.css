@@ -219,3 +219,9 @@ header.mast.searching .hs-field { display: block; }
 .item.lead.hero { grid-template-columns: minmax(0, 1fr); gap: 18px; padding-bottom: 32px; }
 .item.hero .hero-img { width: 100%; height: auto; border-radius: 8px; display: block; background: var(--surface); }
 .item.hero .item-body { padding-top: 0; }
+/* post pictures can be dragged with a mouse */
+@media (hover: hover) and (pointer: fine) {
+  .track { cursor: grab; }
+  .track.dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+  .track img { -webkit-user-drag: none; }
+}

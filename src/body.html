@@ -511,6 +511,25 @@ function renderPost(p) {
     next.addEventListener("click", () => go(idx() + 1));
     track.addEventListener("scroll", () => requestAnimationFrame(sync), { passive: true });
     track.addEventListener("keydown", e => { if (e.key === "ArrowRight") { e.preventDefault(); go(idx() + 1); } if (e.key === "ArrowLeft") { e.preventDefault(); go(idx() - 1); } });
+    // a mouse drags the pictures like a finger (Evgenii 20.10); touch screens and trackpads scroll the track by themselves
+    let drag = null;
+    track.addEventListener("pointerdown", e => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      drag = { x: e.clientX, left: track.scrollLeft, k: idx() };
+      track.setPointerCapture(e.pointerId);
+      track.classList.add("dragging");
+    });
+    track.addEventListener("pointermove", e => { if (drag) track.scrollLeft = drag.left - (e.clientX - drag.x); });
+    const drop = e => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x, k = Math.abs(dx) > track.clientWidth * 0.12 ? drag.k + (dx < 0 ? 1 : -1) : drag.k;
+      drag = null;
+      track.classList.remove("dragging");
+      go(Math.max(0, Math.min(n - 1, k)));
+    };
+    track.addEventListener("pointerup", drop);
+    track.addEventListener("pointercancel", drop);
+    track.addEventListener("dragstart", e => e.preventDefault());
     sync();
   }
 }
