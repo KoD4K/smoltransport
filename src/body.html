@@ -60,7 +60,7 @@
 </footer>
 
 <script>
-const PAGE = 20;
+const PAGE = 20, AUTO_MAX = 2 * PAGE;
 const RUBRICS = [
   ["трамвай", "Трамвай"], ["троллейбус", "Троллейбус"], ["автобус", "Автобус"], ["жд", "Железная дорога"], ["авиа", "Авиа"],
   ["намПишут", "Нам пишут"], ["ДТП", "ДТП"], ["обновление", "Обновление парка"], ["бу", "Б/у вагоны"],
@@ -316,12 +316,14 @@ function renderList() {
   });
   feed.innerHTML = html || `<div class="empty">Ничего не нашлось. Попробуйте другое слово, рубрику или период.</div>`;
   more.innerHTML = r.more ? `<button id="more-btn">Показать ещё</button>` : "";
-  if (r.more) {
-    document.getElementById("more-btn").addEventListener("click", loadMore);
-    if (observer) observer.disconnect();
+  if (observer) observer.disconnect();
+  if (r.more) document.getElementById("more-btn").addEventListener("click", loadMore);
+  // scrolling loads more by itself only up to AUTO_MAX cards, then the button waits for a click,
+  // so the footer can be reached (Evgenii 21.10: «while scrolling user can't see it at all»)
+  if (r.more && state.shown < AUTO_MAX) {
     observer = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) loadMore(); }, { rootMargin: "600px 0px" });
     observer.observe(more);
-  } else if (observer) observer.disconnect();
+  }
 }
 function loadMore() { state.shown += PAGE; renderList(); }
 
