@@ -871,7 +871,7 @@ function renderArchive(box) {
   const picks = ANS.filter(a => a.pick).sort((x, y) => (x.pick.order || 99) - (y.pick.order || 99));
   box.innerHTML = `
       <h2>Архив ответов ${Math.min(...years)}–${Math.max(...years)}</h2>
-      <p class="prose ans-intro">Ответы ведомств на обращения читателей и участников группы, которые мы публиковали в альбоме ВКонтакте. У каждого письма есть скан. Имена частных лиц закрыты.</p>
+      <p class="prose ans-intro">Ответы ведомств на обращения читателей и участников группы, которые мы публиковали в альбоме ВКонтакте, и ответы на наши обращения через интернет-приёмную администрации города. У каждого письма есть скан. Личные данные частных лиц закрыты.</p>
       ${picks.length ? `<h3 class="ans-h3">Что обещали и что вышло</h3>
       <div class="picks">${picks.map(a => `<a class="pick" href="#otvet/${esc(a.id)}">
           <small>${ansDate(a)} · ${esc(a.sender_short || a.sender)}</small>
@@ -938,6 +938,7 @@ function renderAnswer(id) {
     <section class="section">
       <dl class="imprint">
         <dt>Отправитель</dt><dd>${esc(a.sender)}</dd>
+        ${a.source === "lk" ? `<dt>Откуда</dt><dd>Ответ на наше обращение через интернет-приёмную администрации города</dd>` : ""}
         ${a.signer ? `<dt>Подписал</dt><dd>${esc(a.signer)}</dd>` : ""}
         <dt>Дата</dt><dd>${a.date_approx === "year" ? `${a.date.slice(0, 4)} год, дата на скане закрыта` : human(a.date)}</dd>
         ${a.number ? `<dt>Номер</dt><dd>${esc(a.number)}</dd>` : ""}
