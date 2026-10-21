@@ -176,6 +176,11 @@ nav.main a { padding: 7px 11px; }
 .hs-toggle { display: grid; }
 .hs-field { display: none; order: 3; width: 100%; }
 header.mast.searching .hs-field { display: block; }
+/* the VK group next to search (Evgenii 21.10), so the link shows without scrolling to the footer; a plain link, nothing loaded from VK */
+.hd-vk { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); color: var(--fg); flex: none; margin-right: -12px; }
+.hd-vk svg { width: 20px; height: 20px; fill: currentColor; }
+.hd-vk:hover { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 720px) { .hd-vk { order: 2; margin-right: 0; } }
 
 /* Archive of official answers (#zaprosy/arhiv, #otvet/<id>) */
 .pill.no { color: var(--no); }
