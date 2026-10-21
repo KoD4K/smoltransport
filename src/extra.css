@@ -193,7 +193,7 @@ header.mast.searching .hs-field { display: block; }
 .ans:hover .ans-sum { color: var(--accent); }
 .ans-meta { display: block; }  /* one line with dots, not a column of wrapped chips */
 .ans-meta span { white-space: nowrap; }
-.ans-meta span + span::before { content: " · "; }
+.ans-meta span + span::before { content: "· "; }  /* the space between the spans lets a long line wrap on phones */
 .ans-sum { margin: 4px 0 6px; }
 @media (max-width: 560px) {
   .ans { grid-template-columns: minmax(0, 1fr); padding-block: 12px; }
@@ -234,3 +234,15 @@ header.mast.searching .hs-field { display: block; }
 .hours .hr-head b, .hours .hr-head span { font: 500 0.8125rem/1.4 var(--body); color: var(--muted); }
 .hours .hr-head span { padding-left: 5px; }
 @media (max-width: 720px) { .howto { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
+
+/* «Запросы и ответы»: the appeals we sent (site/requests.json), newest first, no senders */
+.reqs { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); max-width: 920px; }
+.req { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.req h3 { font-family: var(--display); font-weight: 700; font-size: var(--step-1); line-height: 1.25; margin: 0 0 6px; }
+.req p { margin: 0 0 8px; max-width: 65ch; }
+.req-meta { display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--muted); font-size: var(--step--1); }
+.req-status { padding-top: 2px; }
+@media (max-width: 720px) {
+  .req { grid-template-columns: minmax(0, 1fr); }
+  .req-status { order: -1; padding-top: 0; }
+}
