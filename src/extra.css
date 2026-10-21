@@ -225,3 +225,12 @@ header.mast.searching .hs-field { display: block; }
   .track.dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
   .track img { -webkit-user-drag: none; }
 }
+/* timetable: how to read it (a reader's feedback 21.10: «как пользоваться, сходу не вдуплил») */
+.howto { list-style: none; counter-reset: step; margin: 18px 0 22px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 980px; }
+.howto li { counter-increment: step; position: relative; background: var(--surface); border-radius: 12px; padding: 12px 14px 12px 46px; font-size: 0.9375rem; line-height: 1.45; color: var(--muted); }
+.howto li b { color: var(--fg); font-weight: 600; }
+.howto li::before { content: counter(step); position: absolute; left: 12px; top: 11px; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font: 700 0.875rem/24px var(--display); text-align: center; }
+.dir-head .from { display: block; font-size: var(--step--1); color: var(--muted); margin-bottom: 2px; }
+.hours .hr-head b, .hours .hr-head span { font: 500 0.8125rem/1.4 var(--body); color: var(--muted); }
+.hours .hr-head span { padding-left: 5px; }
+@media (max-width: 720px) { .howto { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
