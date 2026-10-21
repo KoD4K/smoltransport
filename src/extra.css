@@ -73,7 +73,7 @@ nav.main { margin-left: auto; }
 .hs-field input::placeholder { color: var(--muted); }
 .hs-field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .hs-field svg { position: absolute; left: 13px; top: 50%; width: 15px; height: 15px; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
-.fh-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fh-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 34px; }  /* the Фильтр button's height, so the tabs don't jump on «Предложения», where there is no button */
 .fbtn { display: inline-flex; align-items: center; gap: 8px; font: 500 0.875rem/1 var(--body); padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
 .fbtn svg { width: 16px; height: 16px; }
 .fbtn:hover, .fbtn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
