@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:t.me)",
+      "WebFetch(domain:smolnarod.ru)",
+      "WebFetch(domain:www.smolnarod.ru)",
+      "WebFetch(domain:smolgazeta.ru)",
+      "WebFetch(domain:www.smolgazeta.ru)",
+      "WebFetch(domain:smolensk-i.ru)",
+      "WebFetch(domain:www.smolensk-i.ru)",
+      "WebFetch(domain:smol.kp.ru)",
+      "WebFetch(domain:www.smol.kp.ru)",
+      "WebFetch(domain:smol.aif.ru)",
+      "WebFetch(domain:smoladmin.ru)",
+      "WebFetch(domain:www.smoladmin.ru)",
+      "WebFetch(domain:admin-smolensk.ru)",
+      "WebFetch(domain:www.admin-smolensk.ru)"
+    ]
+  }
+}
