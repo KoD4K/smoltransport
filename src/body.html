@@ -775,7 +775,7 @@ function reqStatus(r) {
   return `<span class="pill wait">Ждём ответ до ${dmy(due).slice(0, 5)}</span>`;
 }
 function reqListHtml(list) {
-  const rows = list.slice().sort((a, b) => b.sent.localeCompare(a.sent) || a.n - b.n).map(r => `
+  const rows = list.slice().sort((a, b) => b.sent.localeCompare(a.sent) || parseFloat(a.n) - parseFloat(b.n)).map(r => `
     <li class="req">
       <div class="req-main">
         <h3>${esc(r.topic)}</h3>
