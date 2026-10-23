@@ -1,0 +1,162 @@
+{
+ "_why": "«Главное за день»: сводка смоленских СМИ о транспорте, дорогах и ремонтах (Евгений 23.10.2026). Выходит в 08:03 по Москве вместе с постом ВК; from — с какого времени по Москве показываем.",
+ "items": [
+  {
+   "id": "2026-10-23",
+   "from": "2026-10-23T08:03",
+   "title": "Главное за день: 22 октября",
+   "lede": "Перекрытие ул. Дзержинского и ул. Кашена продлили ещё на месяц, на ул. Большой Советской укрепляют склон сваями, а «Смоленскавтодор» обещает отремонтировать участки ещё на 12 улицах.",
+   "lead": "Транспорт, дороги, ремонты и благоустройство: что писали смоленские СМИ.",
+   "image": {
+    "src": "media/digest/2026-10-23-4485a836.jpg",
+    "thumb": "media/digest/2026-10-23-4485a836-t.jpg",
+    "w": 1600,
+    "h": 1200
+   },
+   "news": [
+    {
+     "text": "Перекрытие ул. Дзержинского и ул. Кашена продлили ещё примерно на месяц.",
+     "sources": [
+      {
+       "label": "smoladmin.ru",
+       "href": "https://www.smoladmin.ru/press-centr/dvizhenie-transporta/prodlenie-prekrascheniya-dvizheniya-po-ulicam-dzerzhinskogo-i-kashena-1/"
+      }
+     ]
+    },
+    {
+     "text": "С 21.10 ограничено движение на ул. Черняховского.",
+     "sources": [
+      {
+       "label": "smoladmin.ru",
+       "href": "https://www.smoladmin.ru/press-centr/dvizhenie-transporta/ogranichenie-dvizheniya-transporta-na-chernyahovskogo/"
+      }
+     ]
+    },
+    {
+     "text": "Авария на теплосети 21.10: из-за гидроудара кипяток лился по ступеням Успенского собора на ул. Соболева. Ночью трубу на Соборной горе заменили, на ул. Шевченко и ул. Соболева шёл ремонт. По версии «РИР-Энерго», сторонняя организация повредила кабель насосной станции.",
+     "sources": [
+      {
+       "label": "smolensk-i.ru",
+       "href": "https://smolensk-i.ru/society/fontan-kipyatka-nazvana-prichina-cheredy-kommunalnyh-avarij-v-czentre-smolenska_663880"
+      },
+      {
+       "label": "Telegram @smolleaks",
+       "href": "https://t.me/smolleaks/2177"
+      }
+     ]
+    },
+    {
+     "text": "В Заднепровье энергетики обещают вернуть тепло.",
+     "sources": [
+      {
+       "label": "smolnarod.ru",
+       "href": "https://smolnarod.ru/news/smolenskie-energetiki-poobeshhali-vernut-teplo-v-zadneprove/"
+      }
+     ]
+    },
+    {
+     "text": "На ул. Большой Советской для укрепления склона установили 120 свай, реконструкция продолжается.",
+     "sources": [
+      {
+       "label": "smol.kp.ru",
+       "href": "https://www.smol.kp.ru/online/news/7234929/"
+      },
+      {
+       "label": "smolgazeta.ru",
+       "href": "https://smolgazeta.ru/daylynews/141382-v-smolenske-prodoljaetsya-kompleksnaya.html"
+      }
+     ]
+    },
+    {
+     "text": "Источник @smolleaks в НИИ им. Герсеванова утверждает, что изыскания по оползню на ул. Большой Советской не закончены, а версия мэрии о засыпанном овраге пока лишь гипотеза.",
+     "sources": [
+      {
+       "label": "Telegram @smolleaks",
+       "href": "https://t.me/smolleaks/2155"
+      }
+     ]
+    },
+    {
+     "text": "«Смоленскавтодор» подвёл промежуточные итоги нацпроекта: до конца срока планируют отремонтировать участки на 12 улицах Смоленска.",
+     "sources": [
+      {
+       "label": "smolensk-i.ru",
+       "href": "https://smolensk-i.ru/auto/smolenskavtodor-podvyol-promezhutochnye-itogi-realizaczii-naczproekta_663905"
+      }
+     ]
+    },
+    {
+     "text": "Область обновила парк дорожной техники.",
+     "sources": [
+      {
+       "label": "Telegram @smolensk_i",
+       "href": "https://t.me/smolensk_i/59204"
+      }
+     ]
+    },
+    {
+     "text": "На ул. Нижней Дубровенке спрофилировали дорожное покрытие.",
+     "sources": [
+      {
+       "label": "smolgazeta.ru",
+       "href": "https://smolgazeta.ru/public/141385-smolenskavtodor-uluchshil-dorojnoe-pokrytie.html"
+      }
+     ]
+    },
+    {
+     "text": "94 светофора в области подключили к интеллектуальной транспортной системе.",
+     "sources": [
+      {
+       "label": "Telegram @smolnarod",
+       "href": "https://t.me/smolnarod/76415"
+      }
+     ]
+    },
+    {
+     "text": "Область вместе с Беларусью прорабатывает проект такси на электромобилях и белорусского агрегатора.",
+     "sources": [
+      {
+       "label": "smolnarod.ru",
+       "href": "https://smolnarod.ru/news/v-smolenskoj-oblasti-mozhet-poyavitsya-belorusskij-agregator-taksi-i-taksopark-elektromobilej/"
+      },
+      {
+       "label": "smol.aif.ru",
+       "href": "https://smol.aif.ru/"
+      }
+     ]
+    },
+    {
+     "text": "Аэропорт «Смоленск-Северный»: Главгосэкспертиза опубликовала параметры. По данным @smolleaks, тендеры примерно на 10 млрд руб. выиграла белорусская компания; отдельно разыгрывается подъездная дорога длиной больше 1 км от ул. Кутузова.",
+     "sources": [
+      {
+       "label": "Telegram @smolnarod",
+       "href": "https://t.me/smolnarod/76398"
+      },
+      {
+       "label": "Telegram @smolleaks",
+       "href": "https://t.me/smolleaks/2175"
+      }
+     ]
+    },
+    {
+     "text": "Губернатор подписал соглашение о комплексном развитии территории (КРТ) исторического центра Смоленска.",
+     "sources": [
+      {
+       "label": "Telegram @smolensk_i",
+       "href": "https://t.me/smolensk_i/59195"
+      }
+     ]
+    },
+    {
+     "text": "По данным @smolleaks, фудхолл «Молодость» почти на 3 м выше крепостной стены.",
+     "sources": [
+      {
+       "label": "Telegram @smolleaks",
+       "href": "https://t.me/smolleaks/2167"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
