@@ -421,7 +421,7 @@ hsToggle.addEventListener("click", () => {
 let PROP = [];
 const PROP_LOAD = getJSON("proposals.json").then(d => { PROP = (d.items || []).filter(x => x.id && x.title); }, () => {});
 // «Главное за день» (Evgenii 23.10.2026): what Smolensk media wrote about transport, roads and repairs the day before,
-// published daily at 08:03 Moscow with the VK post. site/digest.json {"items": [{"id": "YYYY-MM-DD" (day published),
+// published on weekdays at 08:03 Moscow with the VK post; Monday's issue covers Friday to Sunday (Evgenii 23.10). site/digest.json {"items": [{"id": "YYYY-MM-DD" (day published),
 // "day": the day it covers, "from": "YYYY-MM-DDTHH:MM" Moscow (hidden before), "title", "lede" (card), "lead" (page),
 // "image": {"src", "thumb", "w", "h"}, "news": [{"text", "sources": [{"label", "href"}]}]}]}, pictures in site/media/digest/.
 let DIG = [];
@@ -453,7 +453,7 @@ function renderDigests() {
       ${mtabs("dig")}
     </div>
     <h1 class="page-title">Главное за день</h1>
-    <p class="lead-text">Что смоленские СМИ писали о транспорте, дорогах, ремонтах и благоустройстве. Каждое утро в 08:03, со ссылками на источники.</p>
+    <p class="lead-text">Что смоленские СМИ писали о транспорте, дорогах, ремонтах и благоустройстве. По будням в 08:03, в понедельник сразу за пятницу и выходные. Со ссылками на источники.</p>
     ${DIG.length ? `<section class="section"><div class="feed">${DIG.map(digCard).join("")}</div></section>` : `<div class="empty">Выпусков пока нет.</div>`}`;
 }
 function renderDigest(id) {
