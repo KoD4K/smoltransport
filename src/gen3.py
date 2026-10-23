@@ -77,6 +77,9 @@ def untag(m):
     return " ".join(parts)
 
 
+# old wall tags shown under one rubric: Evgenii asked for a purchases rubric on 23.10.2026, the group chose #закупка
+# (the newest of the variants) and put the rest on the «Не ставим» list, but 2015–2025 posts still carry them
+TAG_ALIAS = {"закупки": "закупка", "госзакупки": "закупка", "закупкимуттп": "закупка", "тендер": "закупка", "аукцион": "закупка"}
 LEAD_TAGS = ("нампишут", "слухи", "ретро", "фото", "несмоленское", "официальныйответ", "обещание", "проверка")
 LEAD = re.compile(r"^\s*#([\wё]+)[\s:.—–-]*", re.I)
 
@@ -190,6 +193,9 @@ def build(r, text, archive):
     paras = [p for p in paras if not TAGS_ONLY.match(MARK.sub(lambda m: m.group(2), p).strip())]
     tags = []
     for h in r.get("hashtags", []):
+        k = h.lstrip("#").lower()
+        if k in TAG_ALIAS:
+            h = h[:len(h) - len(h.lstrip("#"))] + TAG_ALIAS[k]
         if h.lower() not in [t.lower() for t in tags]:
             tags.append(h)
     flat = MARK.sub(lambda m: m.group(2), " ".join(paras))
