@@ -420,10 +420,64 @@ hsToggle.addEventListener("click", () => {
 // site/media/proposals/. The «Предложения» tab under «Материалы» shows only once there is at least one.
 let PROP = [];
 const PROP_LOAD = getJSON("proposals.json").then(d => { PROP = (d.items || []).filter(x => x.id && x.title); }, () => {});
-const mtabs = cur => PROP.length ? `<div class="mtabs" aria-label="Материалы">
+// «Главное за день» (Evgenii 23.10.2026): what Smolensk media wrote about transport, roads and repairs the day before,
+// published daily at 08:03 Moscow with the VK post. site/digest.json {"items": [{"id": "YYYY-MM-DD" (day published),
+// "day": the day it covers, "from": "YYYY-MM-DDTHH:MM" Moscow (hidden before), "title", "lede" (card), "lead" (page),
+// "image": {"src", "thumb", "w", "h"}, "news": [{"text", "sources": [{"label", "href"}]}]}]}, pictures in site/media/digest/.
+let DIG = [];
+const DIG_LOAD = getJSON("digest.json").then(d => {
+  const now = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 16);
+  DIG = (d.items || []).filter(x => x.id && x.title && (!x.from || now >= x.from)).sort((a, b) => b.id.localeCompare(a.id));
+}, () => {});
+const mtabs = cur => PROP.length || DIG.length ? `<div class="mtabs" aria-label="Материалы">
     <a href="#"${cur === "feed" ? ' aria-current="page"' : ""}>Все материалы</a>
-    <a href="#predlozheniya"${cur === "prop" ? ' aria-current="page"' : ""}>Предложения</a>
+    ${DIG.length ? `<a href="#glavnoe"${cur === "dig" ? ' aria-current="page"' : ""}>Главное за день</a>` : ""}
+    ${PROP.length ? `<a href="#predlozheniya"${cur === "prop" ? ' aria-current="page"' : ""}>Предложения</a>` : ""}
   </div>` : "";
+function digCard(x) {
+  const im = x.image;
+  return `<a class="item" href="#glavnoe/${esc(x.id)}">
+      ${im ? `<img src="${esc(im.thumb || im.src)}" alt="" loading="lazy" width="800" height="600">` : `<div class="nophoto"></div>`}
+      <div class="item-body">
+        <div class="meta"><span>${human(x.id)}</span>${(x.news || []).length ? `<span>${x.news.length} ${plural(x.news.length, "новость", "новости", "новостей")}</span>` : ""}</div>
+        <h2 class="item-title">${esc(x.title)}</h2>
+        ${x.lede ? `<p class="item-lede">${esc(x.lede)}</p>` : ""}
+      </div>
+    </a>`;
+}
+function renderDigests() {
+  setNav("feed");
+  view.innerHTML = `
+    <div class="feed-head">
+      <div class="fh-row"><div class="eyebrow">Материалы</div></div>
+      ${mtabs("dig")}
+    </div>
+    <h1 class="page-title">Главное за день</h1>
+    <p class="lead-text">Что смоленские СМИ писали о транспорте, дорогах, ремонтах и благоустройстве. Каждое утро в 08:03, со ссылками на источники.</p>
+    ${DIG.length ? `<section class="section"><div class="feed">${DIG.map(digCard).join("")}</div></section>` : `<div class="empty">Выпусков пока нет.</div>`}`;
+}
+function renderDigest(id) {
+  setNav("feed");
+  const x = DIG.find(y => y.id === id), im = x && x.image;
+  const back = `<a class="back" href="#glavnoe">${chev(-1, 16)} Все выпуски</a>`;
+  if (!x) { view.innerHTML = `${back}<div class="empty">Такого выпуска нет.</div>`; return; }
+  const src = l => `<a href="${esc(l.href)}" target="_blank" rel="noopener">${esc(l.label || l.href)}</a>`;
+  view.innerHTML = `
+    ${back}
+    <article>
+      <div class="article-head">
+        <div class="eyebrow">Главное за день · ${human(x.id)}</div>
+        <h1 class="page-title" style="margin-top:8px">${esc(x.title)}</h1>
+        ${x.lead ? `<p class="lead-text">${esc(x.lead)}</p>` : ""}
+      </div>
+      ${im ? `<figure class="prop-fig dig-fig"><img src="${esc(im.src)}" alt="" loading="eager"${im.w && im.h ? ` width="${im.w}" height="${im.h}"` : ""}></figure>` : ""}
+      <ol class="dig-list">${(x.news || []).map(n => `<li><p>${esc(n.text)}</p>${(n.sources || []).length ? `<p class="dig-src">${n.sources.length > 1 ? "Источники" : "Источник"}: ${n.sources.map(src).join(", ")}</p>` : ""}</li>`).join("")}</ol>
+      <div class="article-foot">
+        <p class="dig-note">Пересказываем коротко. Подробности по ссылкам на источники.</p>
+        ${x.vk ? `<a class="vk-link" href="${esc(x.vk)}" target="_blank" rel="noopener">Обсудить в группе ВКонтакте ${chev(1, 16)}</a>` : ""}
+      </div>
+    </article>`;
+}
 function propCard(x) {
   const ims = x.images || [], im = ims.find(i => i.card) || ims[0];   // "card": true picks the list picture
   return `<a class="item" href="#predlozhenie/${esc(x.id)}">
@@ -1012,6 +1066,8 @@ function route() {
   else if (h === "zaprosy" || h === "zaprosy/arhiv") { window.scrollTo(0, 0); renderRequests(h.split("/")[1]); }
   else if (h.startsWith("otvet/")) { if (lastHash.startsWith("zaprosy")) ans.scrollY = window.scrollY; renderAnswer(h.slice(6)); window.scrollTo(0, 0); }
   else if (h === "redakciya") { renderAbout(); window.scrollTo(0, 0); }
+  else if (h === "glavnoe") { renderDigests(); window.scrollTo(0, 0); }
+  else if (h.startsWith("glavnoe/")) { renderDigest(h.slice(8)); window.scrollTo(0, 0); }
   else if (h === "predlozheniya") { renderProposals(); window.scrollTo(0, 0); }
   else if (h.startsWith("predlozhenie/")) { renderProposal(h.slice(13)); window.scrollTo(0, 0); }
   else { renderFeed(); if (lastHash.startsWith("p")) window.scrollTo(0, state.scrollY); }
@@ -1047,7 +1103,7 @@ getJSON("data/index/meta.json").then(meta => {
   const withFeed = YEARS.filter(y => y.feed);
   NEWEST = withFeed[0].last; OLDEST = withFeed[withFeed.length - 1].first;
   CHIPS = RUBRICS.filter(([k]) => (RUBRIC_N[lower(k)] || 0) >= 5);
-  return Promise.all([PROP_LOAD, FEAT_LOAD, ANCHORS_LOAD]);
+  return Promise.all([PROP_LOAD, DIG_LOAD, FEAT_LOAD, ANCHORS_LOAD]);
 }).then(() => {
   window.addEventListener("hashchange", route);
   route();

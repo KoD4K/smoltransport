@@ -212,7 +212,18 @@ header.mast.searching .hs-field { display: block; }
 .scan figcaption { color: var(--muted); font-size: var(--step--1); margin-top: 6px; }
 
 /* «Материалы»: all posts / our proposals (#predlozheniya, #predlozhenie/<id>) */
-.mtabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); }
+.mtabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.mtabs::-webkit-scrollbar { display: none; }
+.mtabs a { white-space: nowrap; }
+/* «Главное за день» (#glavnoe, #glavnoe/<date>) */
+.dig-fig { max-width: 820px; }
+.dig-list { max-width: 720px; margin: 28px 0 0; padding-left: 1.6em; display: flex; flex-direction: column; gap: 18px; }
+.dig-list li { padding-left: 4px; }
+.dig-list li::marker { color: var(--accent); font-weight: 700; }
+.dig-list p { margin: 0; overflow-wrap: anywhere; }
+.dig-list .dig-src { color: var(--muted); font-size: 0.9375rem; margin-top: 4px; }
+.dig-list .dig-src a { color: var(--accent); }
+.dig-note { color: var(--muted); font-size: var(--step--1); max-width: 62ch; margin: 0; }
 .mtabs a { padding: 2px 0 10px; color: var(--muted); text-decoration: none; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .mtabs a:hover { color: var(--fg); }
 .mtabs a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--accent); }
