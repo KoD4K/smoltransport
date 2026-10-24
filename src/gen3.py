@@ -80,7 +80,7 @@ def untag(m):
 # old wall tags shown under one rubric: Evgenii asked for a purchases rubric on 23.10.2026, the group chose #закупка
 # (the newest of the variants) and put the rest on the «Не ставим» list, but 2015–2025 posts still carry them
 TAG_ALIAS = {"закупки": "закупка", "госзакупки": "закупка", "закупкимуттп": "закупка", "тендер": "закупка", "аукцион": "закупка"}
-LEAD_TAGS = ("нампишут", "слухи", "ретро", "фото", "несмоленское", "официальныйответ", "обещание", "проверка")
+LEAD_TAGS = ("нампишут", "слухи", "юмор", "ретро", "фото", "несмоленское", "официальныйответ", "обещание", "проверка")
 LEAD = re.compile(r"^\s*#([\wё]+)[\s:.—–-]*", re.I)
 
 
