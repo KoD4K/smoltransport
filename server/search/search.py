@@ -6,7 +6,7 @@ first: feed posts whose title, text or rubrics hold every word of q (case and ё
 inside the dates when those are given. Posts come from data/m/<YYYY-MM>.json and are re-read when the site data
 is updated. Nothing about readers is kept: no cookies, no addresses, no log.
 """
-import glob, json, os, re, sys, threading
+import glob, json, os, re, threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
@@ -14,61 +14,36 @@ DATA = os.environ.get("DATA_DIR", "/var/www/smoltransport/data")
 MARK = re.compile(r"⟦([^|⟧]+)\|([^⟧]*)⟧")
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 lock = threading.Lock()
-posts, stamp, cache, warned = [], None, {}, set()
+posts, stamp = [], None
 
 
 def norm(s):
     return s.lower().replace("ё", "е")
 
 
-def read_month(f):
-    """(id, year, date, rubrics, text) of the feed posts in one month file."""
-    out = []
-    with open(f, encoding="utf-8") as fh:
-        for p in json.load(fh):
-            if p.get("archive") or p.get("nofeed"):
-                continue
-            tags = {norm(t.lstrip("#")) for t in p.get("tags") or []}
-            text = norm(" ".join([p.get("title") or "", *(MARK.sub(r"\2", b) for b in p.get("body") or []),
-                                  *(p.get("tags") or [])]))
-            out.append((p["id"], int(p["date"][:4]), p["date"], tags, text))
-    return out
-
-
 def load():
-    """Feed posts of all months, newest month first; a month is re-read when its file changes. A month that can't be
-    read right now (being replaced, or broken) keeps its previous copy, is named in the journal and is tried again on
-    the next search; the other months still answer, so one bad file no longer empties the whole search."""
+    """(id, year, date, rubrics, text) of every feed post, newest month first; re-read when a month file changes."""
     global posts, stamp
     files = sorted(glob.glob(os.path.join(DATA, "m", "*.json")), reverse=True)
-    now = []
-    for f in files:
-        try:
-            now.append((f, os.path.getmtime(f)))
-        except OSError:
-            pass
-    now = tuple(now)
+    try:
+        now = tuple((f, os.path.getmtime(f)) for f in files)
+    except OSError:
+        return posts
     with lock:
         if now != stamp:
-            fresh, failed = [], False
-            for f, mtime in now:
-                old = cache.get(f)
-                if not old or old[0] != mtime:
-                    try:
-                        cache[f] = (mtime, read_month(f))
-                    except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
-                        if (f, mtime) not in warned:  # once per file version, not on every search
-                            warned.add((f, mtime))
-                            print(f"search: {os.path.basename(f)} not read: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
-                        failed = True
-                        if not old:
-                            continue
-                fresh.extend(cache[f][1])
-            for f in set(cache) - {f for f, _ in now}:
-                del cache[f]
-            if not failed or len(fresh) != len(posts):
-                print(f"search: {len(fresh)} posts from {len(now)} month files", file=sys.stderr, flush=True)
-            posts, stamp = fresh, (None if failed else now)
+            fresh = []
+            try:
+                for f in files:
+                    with open(f, encoding="utf-8") as fh:
+                        for p in json.load(fh):
+                            if p.get("archive") or p.get("nofeed"):
+                                continue
+                            tags = {norm(t.lstrip("#")) for t in p["tags"]}
+                            text = norm(" ".join([p["title"], *(MARK.sub(r"\2", b) for b in p["body"]), *p["tags"]]))
+                            fresh.append((p["id"], int(p["date"][:4]), p["date"], tags, text))
+            except (OSError, ValueError, KeyError, TypeError):
+                return posts  # a file is being replaced right now: answer from the previous copy
+            posts, stamp = fresh, now
     return posts
 
 
