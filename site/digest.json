@@ -2,6 +2,145 @@
  "_why": "«Главное за день»: сводка смоленских СМИ о транспорте, дорогах и ремонтах (Евгений 23.10.2026). Выходит в 08:03 по Москве вместе с постом ВК; from — с какого времени по Москве показываем.",
  "items": [
   {
+   "id": "2026-10-26",
+   "from": "2026-10-26T08:03",
+   "title": "Главное за день: 23–25 октября",
+   "lede": "На кольце ул. Багратиона обещают сделать полноценную трамвайную остановку, контракты на аэропорт почти на 10 млрд ₽ подписаны, а 26–30 октября в трёх районах отключат горячую воду.",
+   "lead": "Транспорт, дороги, ремонты и благоустройство: что писали смоленские СМИ в пятницу и выходные.",
+   "image": {
+    "src": "media/digest/2026-10-26-305c730f.jpg",
+    "thumb": "media/digest/2026-10-26-305c730f-t.jpg",
+    "w": 1600,
+    "h": 1200
+   },
+   "news": [
+    {
+     "text": "На кольце ул. Багратиона оборудуют полноценную трамвайную остановку: глава города Александр Новиков поручил это управлению по транспорту. Сейчас пассажиры входят и выходят на поворотах, рядом проезжая часть и торговые объекты. Само кольцо уже благоустроено, будет озеленение; какой будет остановка и когда, не сказано.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/auto/v-smolenske-oboruduyut-ostanovku-dlya-tramvaya-na-ulicze-bagrationa_664143"
+      }
+     ]
+    },
+    {
+     "text": "Область подписала два контракта на реконструкцию аэропорта «Смоленск (Северный)» почти на 10 млрд руб. с белорусским ГП «Трест Минскпромстрой»: взлётно-посадочная полоса 2500×42 м, рулёжная дорожка, перроны и новый аэровокзал, работы в 2026–2029 годах.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/authority/zaklyucheny-kontrakty-na-stroitelstvo-aeroporta-v-smolenske_664090"
+      },
+      {
+       "label": "«Смоленская газета»",
+       "href": "https://smolgazeta.ru/stroitelstvo/141434-stal-izvesten-podryadchik-kotoryy-zaymetsya.html"
+      }
+     ]
+    },
+    {
+     "text": "Пригородные поезда Смоленск — Витебск с 25 октября останавливаются в Лиозно.",
+     "sources": [
+      {
+       "label": "SmolNarod",
+       "href": "https://smolnarod.ru/news/poezda-vitebsk-smolensk-nachnut-ostanavlivatsya-v-liozno-s-25-oktyabrya/"
+      },
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/society/na-prigorodnom-poezde-smolensk-vitebsk-vvedut-dopolnitelnuyu-ostanovku_664164"
+      }
+     ]
+    },
+    {
+     "text": "Водителя трамвая оштрафовали на 15 000 руб.: 30 апреля при начале движения упала пассажирка и получила вред здоровью средней тяжести.",
+     "sources": [
+      {
+       "label": "SmolNarod",
+       "href": "https://smolnarod.ru/news/v-smolenske-voditelya-tramvaya-oshtrafovali-za-padenie-passazhira/"
+      }
+     ]
+    },
+    {
+     "text": "На трассе М-1 в Кардымовском округе микроавтобус врезался в стоящий грузовик, водитель погиб.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/accidents/poyavilis-podrobnosti-smertelnogo-dtp-na-trasse-m-1-v-smolenskoj-oblasti-3_664009"
+      },
+      {
+       "label": "«Смоленская газета»",
+       "href": "https://smolgazeta.ru/accident/141419-v-kardymovskom-okruge-58-letniy.html"
+      }
+     ]
+    },
+    {
+     "text": "С 26 по 30 октября в трёх районах Смоленска отключат горячую воду из-за освидетельствования подогревателей: в том числе ул. Попова, ул. Большая Советская, ул. Рыленкова, пр. Строителей, ул. Юрьева, ул. Островского, ул. Крупской.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/society/gkh/v-smolenske-masshtabno-otklyuchat-goryachuyu-vodu-2_664070"
+      }
+     ]
+    },
+    {
+     "text": "Дорожные службы области получили 23 единицы техники: четыре комбинированные машины МАЗ и вакуумный пылесос для Смоленска, автогрейдеры, самосвалы, сваебойную установку.",
+     "sources": [
+      {
+       "label": "Правительство области",
+       "href": "https://www.admin-smolensk.ru/novosti/news/dorozhnye-sluzhby-smolenskoj-oblasti-poluchili-23-novye-edinicy-tehniki/"
+      },
+      {
+       "label": "SmolNarod",
+       "href": "https://smolnarod.ru/news/smolenskavtodor-poluchil-23-novye-edinicy-dorozhnoj-texniki/"
+      }
+     ]
+    },
+    {
+     "text": "На ул. Ново-Киевской восстановят благоустройство после раскопа под водопровод между домами Ново-Киевская, 1 и Колхозная, 8.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/society/v-smolenske-provedut-blagoustrojstvo-na-novo-kievskoj-ulicze_664186"
+      }
+     ]
+    },
+    {
+     "text": "Началось обсуждение проектов Генерального плана и Правил землепользования и застройки Смоленска.",
+     "sources": [
+      {
+       "label": "SmolNarod",
+       "href": "https://smolnarod.ru/news/smolensk/society-smolensk/v-smolenske-startovalo-obsuzhdenie-proektov-genplana-i-pravil-zemlepolzovaniya-i-zastrojki/"
+      }
+     ]
+    },
+    {
+     "text": "Губернатор Василий Анохин рассказал об обновлении транспорта: за три года Смоленск получил 55 новых низкопольных автобусов, 10 троллейбусов с автономным ходом и 15 трамваев из Москвы, ещё 8 вагонов модернизированы.",
+     "sources": [
+      {
+       "label": "«Смоленская газета»",
+       "href": "https://smolgazeta.ru/daylynews/141458-vasiliy-anohin-rasskazal-ob-obnovlenii.html"
+      }
+     ]
+    },
+    {
+     "text": "25 исторических зданий области предлагают инвесторам: льготный кредит и аренда за 1 руб. на время восстановления.",
+     "sources": [
+      {
+       "label": "Telegram @smolensk_i",
+       "href": "https://t.me/smolensk_i/59214"
+      }
+     ]
+    },
+    {
+     "text": "В области за год обновили 121 общественную территорию и построили 39 детских площадок.",
+     "sources": [
+      {
+       "label": "Telegram @smolensk_i",
+       "href": "https://t.me/smolensk_i/59234"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "2026-10-23",
    "from": "2026-10-23T08:03",
    "title": "Главное за день: 22 октября",
