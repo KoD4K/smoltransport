@@ -630,8 +630,8 @@ function repostHtml(p) {
   return `<section class="repost" aria-labelledby="rp-h">
         <h2 id="rp-h">Для перепоста</h2>
         <p class="rp-note">Слайды без счётчика и стрелок, их можно взять в свой пост. Укажите, пожалуйста, источник: «Смоленский транспорт».</p>
-        <div class="rp-grid">${rp.map((x, k) => `<a class="rp-item" href="${esc(x.full)}" download="smoltransport-${p.id}-${k + 1}.jpg">
-          <img src="${esc(x.thumb || x.full)}" alt="Слайд ${k + 1} без счётчика"${x.w && x.h ? ` width="${x.w}" height="${x.h}"` : ""} loading="lazy">
+        <div class="rp-grid">${rp.map((x, k) => `<a class="rp-item${x.w > x.h ? " rp-wide" : ""}" href="${esc(x.full)}" download="smoltransport-${p.id}-${k + 1}.jpg">
+          <img src="${esc(x.thumb || x.full)}" alt="Картинка ${k + 1} для перепоста"${x.w && x.h ? ` width="${x.w}" height="${x.h}"` : ""} loading="lazy">
           <span>Скачать${rp.length > 1 ? ` ${k + 1}` : ""}</span></a>`).join("")}</div>
         ${vk.length ? `<div class="rp-vk"><span class="src">Изображения поста в полном размере, с серверов ВКонтакте</span>
           <div class="rp-links">${vk.map((ph, k) => `<a href="${esc(ph.full)}" target="_blank" rel="noopener" referrerpolicy="no-referrer" aria-label="Скачать изображение ${k + 1} из ${vk.length}">${vk.length > 1 ? k + 1 : "Скачать"}</a>`).join("")}</div></div>` : ""}

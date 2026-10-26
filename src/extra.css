@@ -267,9 +267,11 @@ header.mast.searching .hs-field { display: block; }
 .repost { max-width: 65ch; margin-top: 28px; padding: 16px; border-radius: 12px; background: var(--surface); }
 .repost h2 { font-family: var(--display); font-weight: 700; font-size: var(--step-1); line-height: 1.25; margin: 0 0 4px; }
 .rp-note { margin: 0 0 14px; color: var(--muted); font-size: 0.9375rem; }
-.rp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.rp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); grid-auto-flow: row dense; align-items: start; gap: 10px; }
 .rp-item { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: var(--accent); font-weight: 600; font-size: 0.9375rem; }
-.rp-item img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 6px; display: block; background: var(--surface-2); }
+.rp-item.rp-wide { grid-column: span 2; }
+/* schemes are 4:3 or square, slides 4:5: keep each picture whole */
+.rp-item img { width: 100%; height: auto; border-radius: 6px; display: block; background: var(--surface-2); }
 .rp-item:hover span { text-decoration: underline; }
 .rp-vk { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
 .rp-links { display: flex; flex-wrap: wrap; gap: 6px; }
