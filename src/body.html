@@ -629,7 +629,7 @@ function repostHtml(p) {
   const vk = p.photos.filter(ph => /^https?:/.test(ph.full || ""));
   return `<section class="repost" aria-labelledby="rp-h">
         <h2 id="rp-h">Для перепоста</h2>
-        <p class="rp-note">Слайды без счётчика и стрелок, их можно взять в свой пост. Укажите, пожалуйста, источник: «Смоленский транспорт».</p>
+        <p class="rp-note">Схемы без нашего оформления и логотипа, слайды без счётчика и стрелок. Их можно взять в свой пост, только поставьте, пожалуйста, ссылку на наш <a href="https://smoltransport.ru">сайт</a> или <a href="https://vk.ru/smolensk_transport" target="_blank" rel="noopener">группу ВКонтакте</a>.</p>
         <div class="rp-grid">${rp.map((x, k) => `<a class="rp-item${x.w > x.h ? " rp-wide" : ""}" href="${esc(x.full)}" download="smoltransport-${p.id}-${k + 1}.jpg">
           <img src="${esc(x.thumb || x.full)}" alt="Картинка ${k + 1} для перепоста"${x.w && x.h ? ` width="${x.w}" height="${x.h}"` : ""} loading="lazy">
           <span>Скачать${rp.length > 1 ? ` ${k + 1}` : ""}</span></a>`).join("")}</div>
