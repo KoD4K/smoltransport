@@ -564,6 +564,7 @@ function renderPost(p) {
         </div>` : ""}
       </div>` : ""}
       <div class="text">${p.body.map(t => `<p>${richText(inlineLinks(t, p.id))}</p>`).join("")}</div>
+      ${repostHtml(p)}
       <div class="article-foot">
         ${tagsHtml(p.tags)}
         ${p.links.length ? `<div class="linklist"><span class="src">Ссылки из поста</span>${p.links.map(l => `<a href="${esc(l.href)}"${l.pid ? "" : ' target="_blank" rel="noopener"'}>${esc(l.label)}</a>`).join("")}</div>` : ""}
@@ -617,6 +618,24 @@ function renderPost(p) {
     track.addEventListener("dragstart", e => e.preventDefault());
     sync();
   }
+}
+
+// «Для перепоста» (Evgenii 26.10.2026): other groups repost our slides, and a carousel's counter and chevrons look torn out
+// there. New posts with a для-перепоста/ folder get clean slides kept on our server (p.repost), plus the post's photos
+// in full size straight from VK, so they take no space here.
+function repostHtml(p) {
+  const rp = p.repost || [];
+  if (!rp.length) return "";
+  const vk = p.photos.filter(ph => /^https?:/.test(ph.full || ""));
+  return `<section class="repost" aria-labelledby="rp-h">
+        <h2 id="rp-h">Для перепоста</h2>
+        <p class="rp-note">Слайды без счётчика и стрелок, их можно взять в свой пост. Укажите, пожалуйста, источник: «Смоленский транспорт».</p>
+        <div class="rp-grid">${rp.map((x, k) => `<a class="rp-item" href="${esc(x.full)}" download="smoltransport-${p.id}-${k + 1}.jpg">
+          <img src="${esc(x.thumb || x.full)}" alt="Слайд ${k + 1} без счётчика"${x.w && x.h ? ` width="${x.w}" height="${x.h}"` : ""} loading="lazy">
+          <span>Скачать${rp.length > 1 ? ` ${k + 1}` : ""}</span></a>`).join("")}</div>
+        ${vk.length ? `<div class="rp-vk"><span class="src">Изображения поста в полном размере, с серверов ВКонтакте</span>
+          <div class="rp-links">${vk.map((ph, k) => `<a href="${esc(ph.full)}" target="_blank" rel="noopener" referrerpolicy="no-referrer" aria-label="Скачать изображение ${k + 1} из ${vk.length}">${vk.length > 1 ? k + 1 : "Скачать"}</a>`).join("")}</div></div>` : ""}
+      </section>`;
 }
 
 // the posts next to this one in the feed: [newer, older]; at the edge of a year they come from the neighbouring year

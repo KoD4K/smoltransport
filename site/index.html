@@ -548,6 +548,20 @@ header.mast.searching .hs-field { display: block; }
   .req { grid-template-columns: minmax(0, 1fr); }
   .req-status { order: -1; padding-top: 0; }
 }
+
+/* «Для перепоста»: clean slides from our server, the post's photos in full size from VK */
+.repost { max-width: 65ch; margin-top: 28px; padding: 16px; border-radius: 12px; background: var(--surface); }
+.repost h2 { font-family: var(--display); font-weight: 700; font-size: var(--step-1); line-height: 1.25; margin: 0 0 4px; }
+.rp-note { margin: 0 0 14px; color: var(--muted); font-size: 0.9375rem; }
+.rp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.rp-item { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: var(--accent); font-weight: 600; font-size: 0.9375rem; }
+.rp-item img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 6px; display: block; background: var(--surface-2); }
+.rp-item:hover span { text-decoration: underline; }
+.rp-vk { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.rp-links { display: flex; flex-wrap: wrap; gap: 6px; }
+.rp-links a { min-width: 40px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--accent); text-align: center; text-decoration: none; font-weight: 600; font-size: 0.9375rem; }
+.rp-links a:hover { border-color: var(--accent); }
+@media (max-width: 480px) { .rp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 </head>
 <body>
@@ -1117,6 +1131,7 @@ function renderPost(p) {
         </div>` : ""}
       </div>` : ""}
       <div class="text">${p.body.map(t => `<p>${richText(inlineLinks(t, p.id))}</p>`).join("")}</div>
+      ${repostHtml(p)}
       <div class="article-foot">
         ${tagsHtml(p.tags)}
         ${p.links.length ? `<div class="linklist"><span class="src">Ссылки из поста</span>${p.links.map(l => `<a href="${esc(l.href)}"${l.pid ? "" : ' target="_blank" rel="noopener"'}>${esc(l.label)}</a>`).join("")}</div>` : ""}
@@ -1170,6 +1185,24 @@ function renderPost(p) {
     track.addEventListener("dragstart", e => e.preventDefault());
     sync();
   }
+}
+
+// «Для перепоста» (Evgenii 26.10.2026): other groups repost our slides, and a carousel's counter and chevrons look torn out
+// there. New posts with a для-перепоста/ folder get clean slides kept on our server (p.repost), plus the post's photos
+// in full size straight from VK, so they take no space here.
+function repostHtml(p) {
+  const rp = p.repost || [];
+  if (!rp.length) return "";
+  const vk = p.photos.filter(ph => /^https?:/.test(ph.full || ""));
+  return `<section class="repost" aria-labelledby="rp-h">
+        <h2 id="rp-h">Для перепоста</h2>
+        <p class="rp-note">Слайды без счётчика и стрелок, их можно взять в свой пост. Укажите, пожалуйста, источник: «Смоленский транспорт».</p>
+        <div class="rp-grid">${rp.map((x, k) => `<a class="rp-item" href="${esc(x.full)}" download="smoltransport-${p.id}-${k + 1}.jpg">
+          <img src="${esc(x.thumb || x.full)}" alt="Слайд ${k + 1} без счётчика"${x.w && x.h ? ` width="${x.w}" height="${x.h}"` : ""} loading="lazy">
+          <span>Скачать${rp.length > 1 ? ` ${k + 1}` : ""}</span></a>`).join("")}</div>
+        ${vk.length ? `<div class="rp-vk"><span class="src">Изображения поста в полном размере, с серверов ВКонтакте</span>
+          <div class="rp-links">${vk.map((ph, k) => `<a href="${esc(ph.full)}" target="_blank" rel="noopener" referrerpolicy="no-referrer" aria-label="Скачать изображение ${k + 1} из ${vk.length}">${vk.length > 1 ? k + 1 : "Скачать"}</a>`).join("")}</div></div>` : ""}
+      </section>`;
 }
 
 // the posts next to this one in the feed: [newer, older]; at the edge of a year they come from the neighbouring year

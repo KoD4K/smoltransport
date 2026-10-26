@@ -11,6 +11,9 @@ covers.json         optional: {post id: {"full", "thumb"}} feed pictures without
                     Older carousels have theirs in site/media/covers/<id>-<hash>.jpg (and -t.jpg); covers.json wins.
 vcovers.json        optional: {video id: path under thumbs/} video covers saved on our server, so readers' browsers
                     don't fetch them from VK's CDN.
+reposts.json        optional: {post id: [{"full", "thumb", "w", "h"}]} slides without the counter and chevrons, made on the
+                    Mac from a post folder's для-перепоста/ (thumbs/repost/), shown in the post's «Для перепоста» block
+                    (Evgenii 26.10.2026, new posts only).
 """
 import json, re, os, sys, html
 from urllib.parse import unquote, urlparse, parse_qs
@@ -27,6 +30,7 @@ if os.path.isdir(_cov):
 if len(sys.argv) > 6 and os.path.exists(sys.argv[6]):
     COVERS.update(json.load(open(sys.argv[6], encoding="utf-8")))
 VCOVERS = json.load(open(sys.argv[7], encoding="utf-8")) if len(sys.argv) > 7 and os.path.exists(sys.argv[7]) else {}
+REPOSTS = json.load(open(sys.argv[8], encoding="utf-8")) if len(sys.argv) > 8 and os.path.exists(sys.argv[8]) else {}
 rows = json.load(open(SRC, encoding="utf-8"))
 DEFAULT_VTITLE = re.compile(r"^\s*((clip|video) by\b|.*\.(mp4|mov|avi|mkv|3gp|webm)\s*$|(vid|img|mov|video)[_-]?\d|\S{30,}\s*$)", re.I)  # VK defaults and file names, not real headings
 rich = {}
@@ -177,6 +181,8 @@ def unmention(m):
 # swear words are not for a 12+ site (436-ФЗ allows them from 16+): the word keeps its first letter, «г…»
 SWEAR = re.compile(r"(?<![а-яё])(?:мудак|мудач|говн|жоп|рукожоп)[а-яё]*", re.I)
 NUMBER_TAG = re.compile(r"(?<![\w&#/])#(\d+)")  # «трамвая #250» is a number, not a rubric
+# «Картинки без надписей для перепоста: smoltransport.ru» sends VK readers here; the site shows the block itself
+REPOST_LINE = re.compile(r"^\s*(?:картинки|изображения|слайды|фото)\b[^\n]{0,80}?\bдля\s+перепоста\b", re.I)
 
 
 def build(r, text, archive):
@@ -186,6 +192,8 @@ def build(r, text, archive):
     text = MENTION.sub(unmention, text.replace("\r", "").strip())
     text = MARK.sub(lambda m: f"⟦{resolve(m.group(1))}|{m.group(2)}⟧", text)
     paras = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+    paras = [q for q in ("\n".join(l for l in p.split("\n") if not REPOST_LINE.match(MARK.sub(lambda m: m.group(2), l))).strip()
+                         for p in paras) if q]
     if paras:
         first, *rest = paras[0].split("\n", 1)
         if GREET.match(first) and len(first) < 60:
@@ -243,6 +251,8 @@ def build(r, text, archive):
         o["nofeed"] = True
     if lede is not None:
         o["lede"] = lede
+    if REPOSTS.get(r["id"]) and not archive:
+        o["repost"] = REPOSTS[r["id"]]
     return o
 
 
