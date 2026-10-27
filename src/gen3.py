@@ -56,6 +56,13 @@ HIDE = {}  # photos and videos kept off the 12+ site
 _hide = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inputs", "hide-12plus.json")
 if os.path.exists(_hide):
     HIDE = {k: v for k, v in json.load(open(_hide, encoding="utf-8")).items() if not k.startswith("_")}
+# links that lead elsewhere on the site than on VK: {"<post id or Mac folder slug>": {"<href in the VK text>": "<site href>"}}
+# (Evgenii 27.10: on VK a quote links to our post with it, on the site to the interview itself)
+_sl = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inputs", "site-links.json")
+SITE_LINKS = {}
+if os.path.exists(_sl):
+    _slug_id = {k.lower(): str(v) for k, v in SLUGS.items()}
+    SITE_LINKS = {_slug_id.get(k.lower(), k): v for k, v in json.load(open(_sl, encoding="utf-8")).items() if not k.startswith("_")}
 rows = [r for r in rows if not HIDE.get(r["id"], {}).get("post")]  # whole posts not for 12+
 arch = [a for a in arch if not HIDE.get(a["id"], {}).get("post")]
 site_ids = {r["id"] for r in rows if r["text"].strip() or r["photos"] or rich.get(r["id"], "").strip() or videos.get(r["id"])} | {a["id"] for a in arch}
@@ -193,7 +200,8 @@ def build(r, text, archive):
     text = NUMBER_TAG.sub("№\u00a0\\1", text)
     text = re.sub(r"(?<=[А-Яа-яЁё])#(\d+)", " №\u00a0\\1", text)  # «Маршрут#1»
     text = MENTION.sub(unmention, text.replace("\r", "").strip())
-    text = MARK.sub(lambda m: f"⟦{resolve(m.group(1))}|{m.group(2)}⟧", text)
+    over = {resolve(k): v for k, v in SITE_LINKS.get(r["id"], {}).items()}
+    text = MARK.sub(lambda m: f"⟦{over.get(resolve(m.group(1)), resolve(m.group(1)))}|{m.group(2)}⟧", text)
     paras = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
     paras = [q for q in ("\n".join(l for l in p.split("\n") if not REPOST_LINE.match(MARK.sub(lambda m: m.group(2), l))).strip()
                          for p in paras) if q]
