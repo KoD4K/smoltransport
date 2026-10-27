@@ -51,7 +51,6 @@
 .vtitle { color: var(--muted); font-size: var(--step--1); }
 /* compact mobile header */
 @media (max-width: 720px) {
-  .proto .wrap { padding-block: 6px; font-size: 0.75rem; line-height: 1.4; }
   header.mast .wrap { padding-block: 12px; gap: 10px; }
   .brand { gap: 10px; }
   .brand img { width: 40px; }

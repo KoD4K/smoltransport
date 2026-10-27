@@ -160,10 +160,6 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
-.proto { background: var(--surface-2); color: var(--muted); font-size: var(--step--1); }
-.proto .wrap { padding-block: 8px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.proto b { color: var(--accent); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.75rem; }
-
 header.mast { border-bottom: 1px solid var(--line); }
 header.mast .wrap { padding-block: 18px; display: flex; gap: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .brand { display: flex; gap: 14px; align-items: center; text-decoration: none; min-width: 0; }
@@ -337,7 +333,6 @@ footer.foot .age { color: var(--fg); border-color: var(--muted); }
 .vtitle { color: var(--muted); font-size: var(--step--1); }
 /* compact mobile header */
 @media (max-width: 720px) {
-  .proto .wrap { padding-block: 6px; font-size: 0.75rem; line-height: 1.4; }
   header.mast .wrap { padding-block: 12px; gap: 10px; }
   .brand { gap: 10px; }
   .brand img { width: 40px; }
@@ -570,8 +565,6 @@ header.mast.searching .hs-field { display: block; }
 </style>
 </head>
 <body>
-<div class="proto"><div class="wrap"><b>Прототип</b><span>Тестовая версия сайта для обратной связи. Материалы — посты со стены группы ВКонтакте в том виде, как они вышли.</span></div></div>
-
 <header class="mast">
   <div class="wrap">
     <a class="brand" href="#">
@@ -630,7 +623,6 @@ header.mast.searching .hs-field { display: block; }
   <div class="wrap"><div class="foot-bottom">
     <span class="age">12+</span>
     <span>© «Смоленский транспорт», 2015–2026</span>
-    <span>Тестовая версия сайта</span>
     <span>Сайт не использует cookies</span>
   </div></div>
 </footer>

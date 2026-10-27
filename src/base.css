@@ -39,10 +39,6 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
-.proto { background: var(--surface-2); color: var(--muted); font-size: var(--step--1); }
-.proto .wrap { padding-block: 8px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.proto b { color: var(--accent); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.75rem; }
-
 header.mast { border-bottom: 1px solid var(--line); }
 header.mast .wrap { padding-block: 18px; display: flex; gap: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .brand { display: flex; gap: 14px; align-items: center; text-decoration: none; min-width: 0; }
