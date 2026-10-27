@@ -550,7 +550,7 @@ header.mast.searching .hs-field { display: block; }
 }
 
 /* «Для перепоста»: clean slides from our server, the post's photos in full size from VK */
-.repost { max-width: 65ch; margin-top: 28px; padding: 16px; border-radius: 12px; background: var(--surface); }
+.repost { max-width: 65ch; margin-top: 28px; scroll-margin-top: 12px; padding: 16px; border-radius: 12px; background: var(--surface); }
 .repost h2 { font-family: var(--display); font-weight: 700; font-size: var(--step-1); line-height: 1.25; margin: 0 0 4px; }
 .rp-note { margin: 0 0 14px; color: var(--muted); font-size: 0.9375rem; }
 .rp-note a { color: var(--accent); }
@@ -652,7 +652,7 @@ const view = document.getElementById("view");
 // data/index/meta.json lists the years and months; data/index/<year>.json holds the feed cards of a year and is loaded
 // as the reader scrolls back; data/m/<YYYY-MM>.json holds the full posts of a month and is loaded when one opens.
 // Search and filters ask the server (api/search) and fall back to the cards in the browser. Old layout: data/posts.json.
-let YEARS = [], MONTH_IDS = [], RUBRIC_N = {}, CHIPS = [], NEWEST = "", OLDEST = "";
+let YEARS = [], MONTH_IDS = [], RUBRIC_N = {}, SLUG = {}, CHIPS = [], NEWEST = "", OLDEST = "";
 const IDX = {}, CARD = {}, FULL = {}, LOADS = {}, SEARCHES = {};
 let FEED = [], NOSEARCH = false, listSeq = 0, routeSeq = 0;
 const state = { filter: null, q: "", qText: "", from: "", to: "", shown: PAGE, scrollY: 0, panel: false };
@@ -1197,7 +1197,7 @@ function repostHtml(p) {
   const rp = p.repost || [];
   if (!rp.length) return "";
   const vk = p.photos.filter(ph => /^https?:/.test(ph.full || ""));
-  return `<section class="repost" aria-labelledby="rp-h">
+  return `<section class="repost" id="perepost" aria-labelledby="rp-h">
         <h2 id="rp-h">Для перепоста</h2>
         <p class="rp-note">Схемы без нашего оформления и логотипа, слайды без счётчика и стрелок. Их можно взять в свой пост, только поставьте, пожалуйста, ссылку на наш <a href="https://smoltransport.ru">сайт</a> или <a href="https://vk.ru/smolensk_transport" target="_blank" rel="noopener">группу ВКонтакте</a>.</p>
         <div class="rp-grid">${rp.map((x, k) => `<a class="rp-item${x.w > x.h ? " rp-wide" : ""}" href="${esc(x.full)}" download="smoltransport-${p.id}-${k + 1}.jpg">
@@ -1642,15 +1642,31 @@ function route() {
   try { h = decodeURIComponent(h); } catch (e) {}  // «#raspisanie/bus-53д» arrives percent-encoded
   const seq = ++routeSeq;
   if (!lastHash && h) state.scrollY = window.scrollY;
-  if (/^p\d+$/.test(h)) {
-    const id = h.slice(1), m = monthOf(id);
-    if (FULL[id] || !m) FULL[id] ? renderPost(FULL[id]) : renderMissing(id);
+  // «Картинки без надписей для перепоста: smoltransport.ru/#s/<папка поста>» is written before VK gives the post an id;
+  // meta.json maps the slug to the id once the post is out, and the link opens the post at the «Для перепоста» block
+  const sm = h.match(/^s\/([\w-]+)$/);
+  if (sm && SLUG[sm[1].toLowerCase()]) { history.replaceState(null, "", "#p" + SLUG[sm[1].toLowerCase()] + "/perepost"); return route(); }
+  const pm = h.match(/^p(\d+)(\/perepost)?$/);
+  if (sm) {
+    view.innerHTML = `<a class="back" href="#">${chev(-1, 16)} Все материалы</a>
+      <div class="empty">Этого поста на сайте пока нет. Посты появляются здесь после выхода в группе ВКонтакте, иногда с задержкой.
+        <a href="https://vk.ru/smolensk_transport" target="_blank" rel="noopener">Открыть группу ВКонтакте</a></div>`;
+    window.scrollTo(0, 0);
+  }
+  else if (pm) {
+    const id = pm[1], m = monthOf(id);
+    const show = () => {
+      FULL[id] ? renderPost(FULL[id]) : renderMissing(id);
+      const b = pm[2] && document.getElementById("perepost");
+      if (b) b.scrollIntoView();
+    };
+    window.scrollTo(0, 0);
+    if (FULL[id] || !m) show();
     else {
       view.innerHTML = `<div class="loading">Загружаем пост…</div>`;
-      loadMonth(m).then(() => { if (seq === routeSeq) FULL[id] ? renderPost(FULL[id]) : renderMissing(id); },
+      loadMonth(m).then(() => { if (seq === routeSeq) show(); },
         () => { if (seq === routeSeq) renderMissing(id, true); });
     }
-    window.scrollTo(0, 0);
   }
   else if (h === "raspisanie" || h.startsWith("raspisanie/")) { const again = lastHash.startsWith("raspisanie"); renderSchedule(h.split("/")[1]); if (!again) window.scrollTo(0, 0); }
   else if (h === "zaprosy" || h === "zaprosy/arhiv") { window.scrollTo(0, 0); renderRequests(h.split("/")[1]); }
@@ -1683,7 +1699,7 @@ function legacy(data) {
   NOSEARCH = true;
 }
 getJSON("data/index/meta.json").then(meta => {
-  YEARS = meta.years; MONTH_IDS = meta.months; RUBRIC_N = meta.rubrics;
+  YEARS = meta.years; MONTH_IDS = meta.months; RUBRIC_N = meta.rubrics; SLUG = meta.slugs || {};
   const y = nextYear();
   return y && loadYear(y.year);
 }, e => {

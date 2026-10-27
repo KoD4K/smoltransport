@@ -264,7 +264,7 @@ header.mast.searching .hs-field { display: block; }
 }
 
 /* «Для перепоста»: clean slides from our server, the post's photos in full size from VK */
-.repost { max-width: 65ch; margin-top: 28px; padding: 16px; border-radius: 12px; background: var(--surface); }
+.repost { max-width: 65ch; margin-top: 28px; scroll-margin-top: 12px; padding: 16px; border-radius: 12px; background: var(--surface); }
 .repost h2 { font-family: var(--display); font-weight: 700; font-size: var(--step-1); line-height: 1.25; margin: 0 0 4px; }
 .rp-note { margin: 0 0 14px; color: var(--muted); font-size: 0.9375rem; }
 .rp-note a { color: var(--accent); }

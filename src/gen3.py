@@ -11,9 +11,10 @@ covers.json         optional: {post id: {"full", "thumb"}} feed pictures without
                     Older carousels have theirs in site/media/covers/<id>-<hash>.jpg (and -t.jpg); covers.json wins.
 vcovers.json        optional: {video id: path under thumbs/} video covers saved on our server, so readers' browsers
                     don't fetch them from VK's CDN.
-reposts.json        optional: {post id: [{"full", "thumb", "w", "h"}]} slides without the counter and chevrons, made on the
+reposts.json        optional: {post id: [{"full", "thumb", "w", "h"}], "_slugs": {slug: post id}} slides without the counter and chevrons, made on the
                     Mac from a post folder's для-перепоста/ (thumbs/repost/), shown in the post's «Для перепоста» block
-                    (Evgenii 26.10.2026, new posts only).
+                    (Evgenii 26.10.2026, new posts only). "_slugs" names each such post by its Mac folder, so a post can
+                    link to smoltransport.ru/#s/<slug> before it is published (Evgenii 26.10: a link to the news, not the site).
 """
 import json, re, os, sys, html
 from urllib.parse import unquote, urlparse, parse_qs
@@ -31,6 +32,8 @@ if len(sys.argv) > 6 and os.path.exists(sys.argv[6]):
     COVERS.update(json.load(open(sys.argv[6], encoding="utf-8")))
 VCOVERS = json.load(open(sys.argv[7], encoding="utf-8")) if len(sys.argv) > 7 and os.path.exists(sys.argv[7]) else {}
 REPOSTS = json.load(open(sys.argv[8], encoding="utf-8")) if len(sys.argv) > 8 and os.path.exists(sys.argv[8]) else {}
+# "_slugs" {"<post folder slug>": "<id>"}: smoltransport.ru/#s/<slug> is written in a post before VK gives it an id
+SLUGS = REPOSTS.pop("_slugs", {}) if isinstance(REPOSTS.get("_slugs"), dict) else {}
 rows = json.load(open(SRC, encoding="utf-8"))
 DEFAULT_VTITLE = re.compile(r"^\s*((clip|video) by\b|.*\.(mp4|mov|avi|mkv|3gp|webm)\s*$|(vid|img|mov|video)[_-]?\d|\S{30,}\s*$)", re.I)  # VK defaults and file names, not real headings
 rich = {}
@@ -329,7 +332,8 @@ write(os.path.join(DATA, "index", "meta.json"), {
                "last": max(o["date"] for o in ps if feedable(o)) if any(map(feedable, ps)) else "", "ids": ids(ps)}
               for y, ps in sorted(years.items(), reverse=True)],
     "months": [[m] + ids(ps) for m, ps in sorted(months.items(), reverse=True)],
-    "rubrics": rubrics})
+    "rubrics": rubrics,
+    "slugs": {k.lower(): str(v) for k, v in SLUGS.items() if str(v) in {o["id"] for o in out if not o.get("archive")}}})
 inline = sum(len(MARK.findall(" ".join(o["body"]))) for o in out)
 internal = sum(1 for o in out for m in MARK.findall(" ".join(o["body"])) if m[0].startswith("#p"))
 print(f"{len(out)} posts ({len(arch)} from the archive); {len(skipped)} skipped; inline links {inline}, to site pages {internal}; "
