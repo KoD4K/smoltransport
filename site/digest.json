@@ -2,6 +2,105 @@
  "_why": "«Главное за день»: сводка смоленских СМИ о транспорте, дорогах и ремонтах (Евгений 23.10.2026). Выходит в 08:03 по Москве вместе с постом ВК; from — с какого времени по Москве показываем.",
  "items": [
   {
+   "id": "2026-10-28",
+   "from": "2026-10-28T08:03",
+   "title": "Главное за день: 26–27 октября",
+   "lede": "Электричку Смоленск — Голынки заменили автобусом № 232 от вокзала, маршрутку № 55н наказывают за проезд мимо остановки на ул. Большой Советской, а на ул. Покровского и Соборной горе до 15 ноября ограничено движение.",
+   "lead": "Транспорт, дороги, ремонты и благоустройство: что писали смоленские СМИ в понедельник и вторник.",
+   "image": {
+    "src": "media/digest/2026-10-28-cb9af0a3.jpg",
+    "thumb": "media/digest/2026-10-28-cb9af0a3-t.jpg",
+    "w": 1600,
+    "h": 1200
+   },
+   "news": [
+    {
+     "text": "Пригородный поезд № 6711/6712 Смоленск — Рудня с 25 октября не доходит до Голынок. Вместо него регион пустил межмуниципальный автобус № 232 от смоленского вокзала до Рудни с заездом в Голынки.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/society/mintrans-regiona-otreagiroval-na-otmenu-elektrichki-mezhdu-smolenskom-i-golynkami_664439"
+      },
+      {
+       "label": "Telegram @smolensk_i",
+       "href": "https://t.me/smolensk_i/59286"
+      }
+     ]
+    },
+    {
+     "text": "Утром 27 октября маршрутка № 55н на ул. Большой Советской ехала по средней полосе и не остановилась на остановке. Управление транспорта направило перевозчику требование с фото: провести проверку, наказать водителя и провести внеочередной инструктаж.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/society/v-smolenske-chinovniki-vyyavili-narushenie-na-marshrute-%e2%84%9655n_664392"
+      },
+      {
+       "label": "Telegram @smolensk_i",
+       "href": "https://t.me/smolensk_i/59279"
+      }
+     ]
+    },
+    {
+     "text": "В Смоленске снова проведут рейд против мотонарушителей.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/auto/v-smolenske-vnov-provedut-rejd-protiv-motonarushitelej_664283"
+      }
+     ]
+    },
+    {
+     "text": "С 28 октября по 15 ноября ограничено движение на ул. Покровского в районе дома 3: ремонт магистральной теплосети.",
+     "sources": [
+      {
+       "label": "Администрация города Смоленска",
+       "href": "https://www.smoladmin.ru/press-centr/dvizhenie-transporta/ogranichenie-dvizheniya-po-ulice-pokrovskogo/"
+      }
+     ]
+    },
+    {
+     "text": "С 28 октября по 15 ноября ограничено движение в районе дома 17 на Соборной горе: ремонт магистральной теплосети.",
+     "sources": [
+      {
+       "label": "Администрация города Смоленска",
+       "href": "https://www.smoladmin.ru/press-centr/dvizhenie-transporta/ogranichenie-dvizheniya-rajone-doma-17-po-sobornoj-gore/"
+      }
+     ]
+    },
+    {
+     "text": "В Ельне 28 октября с 10:00 до 17:00 закрыт для машин железнодорожный переезд на Рославльском шоссе из-за ремонта; объезд через переезд на ул. Смоленский Большак.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/auto/v-smolenskoj-oblasti-zakroyut-zheleznodorozhnyj-pereezd_664472"
+      },
+      {
+       "label": "Telegram @smolensk_i",
+       "href": "https://t.me/smolensk_i/59290"
+      }
+     ]
+    },
+    {
+     "text": "Глава Смоленска Александр Новиков поручил до середины ноября отремонтировать и покрасить игровые комплексы на всех детских площадках города; весной их проверят снова.",
+     "sources": [
+      {
+       "label": "Администрация города Смоленска",
+       "href": "https://www.smoladmin.ru/press-centr/novosti/glava-smolenska-poruchil-privesti-v-poryadok-vse-detskie-ploschadki-do-serediny-noyabrya/"
+      }
+     ]
+    },
+    {
+     "text": "Реконструкция Заднепровского рынка, начатая в апреле, на завершающем этапе: фасад готов, внутри кладут керамогранит и заканчивают остекление; работы обещают завершить в ноябре, прилегающую территорию тоже приводят в порядок.",
+     "sources": [
+      {
+       "label": "Правительство Смоленской области",
+       "href": "https://www.admin-smolensk.ru/novosti/news/v-smolenske-vyhodit-na-finishnuyu-pryamuyu-rekonstrukciya-zadneprovskogo-rynka/"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "2026-10-26",
    "from": "2026-10-26T08:03",
    "title": "Главное за день: 23–25 октября",
