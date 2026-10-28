@@ -1419,9 +1419,12 @@ const REQ_TO = {
   utidh: "Управление транспорта города",
   utidh_muttp: "Управление транспорта города, копия МУТТП",
   adm: "Администрация города",
+  arhiv: "Архивный отдел Администрации города",
+  glava: "Глава города Смоленска",
 };
 const dmy = d => d.split("-").reverse().join(".");
 function reqStatus(r) {
+  if (r.answer && r.answer.formal) return `<span class="pill no">Ответ не по существу</span>`;  // e.g. one line about the contractor's word
   if (r.answer) return `<span class="pill ok">Ответ ${dmy(r.answer.date)}</span>`;
   const due = r.extended || r.due;
   return `<span class="pill wait">Ждём ответ до ${dmy(due).slice(0, 5)}</span>`;
@@ -1432,7 +1435,7 @@ function reqListHtml(list) {
       <div class="req-main">
         <h3>${esc(r.topic)}</h3>
         <p>${esc(r.asked)}</p>
-        <div class="req-meta"><span>${esc(REQ_TO[r.to] || r.to)}</span><span>Отправлено ${dmy(r.sent)}</span>${r.extended ? `<span>Срок продлён</span>` : ""}${r.answer && r.answer.href ? `<a href="${esc(r.answer.href)}">Читать ответ</a>` : ""}</div>
+        <div class="req-meta"><span>${esc(REQ_TO[r.to] || r.to)}</span><span>Отправлено ${dmy(r.sent)}</span>${r.answer && r.answer.formal ? `<span>Ответ ${dmy(r.answer.date)}</span>` : ""}${r.extended ? `<span>Срок продлён</span>` : ""}${r.note ? `<span>${esc(r.note)}</span>` : ""}${r.answer && r.answer.href ? `<a href="${esc(r.answer.href)}">Читать ответ</a>` : ""}</div>
       </div>
       <div class="req-status">${reqStatus(r)}</div>
     </li>`).join("");
