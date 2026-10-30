@@ -1197,7 +1197,7 @@ function renderPost(p) {
 // paste the link (Evgenii 27.10); without the clipboard (old browser, http) the link just opens.
 // Only when there is something to take: photos and clean schemes. Our own text cards in our style don't count (Evgenii
 // 30.10), so the posts below, whose для-перепоста/ held such cards, show no block (by Mac folder slug or post id)
-const RP_OFF = ["2026-10-29-otvet-pryamoy-linii"];
+const RP_OFF = ["2026-10-29-otvet-pryamoy-linii", "139349"];
 function repostHtml(p) {
   const rp = p.repost || [];
   if (!rp.length || RP_OFF.some(k => String(p.id) === k || SLUG[k.toLowerCase()] == p.id)) return "";
