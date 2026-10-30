@@ -1194,14 +1194,17 @@ function renderPost(p) {
 // there. New posts with a для-перепоста/ folder get clean slides kept on our server (p.repost), plus the post's photos
 // in full size straight from VK, so they take no space here.
 // «сайт» and «группу ВКонтакте» name this very post and copy its address on a click, so a group that takes a picture can
-// paste the link (Evgenii 27.10); without the clipboard (old browser, http) the link just opens
+// paste the link (Evgenii 27.10); without the clipboard (old browser, http) the link just opens.
+// Only when there is something to take: photos and clean schemes. Our own text cards in our style don't count (Evgenii
+// 30.10), so the posts below, whose для-перепоста/ held such cards, show no block (by Mac folder slug or post id)
+const RP_OFF = ["2026-10-29-otvet-pryamoy-linii"];
 function repostHtml(p) {
   const rp = p.repost || [];
-  if (!rp.length) return "";
+  if (!rp.length || RP_OFF.some(k => String(p.id) === k || SLUG[k.toLowerCase()] == p.id)) return "";
   const vk = p.photos.filter(ph => /^https?:/.test(ph.full || ""));
   return `<section class="repost" id="perepost" aria-labelledby="rp-h">
         <h2 id="rp-h">Для перепоста</h2>
-        <p class="rp-note">Схемы без нашего оформления и логотипа, слайды без счётчика и стрелок. Их можно взять в свой пост, только поставьте, пожалуйста, ссылку на наш <a class="rp-copy" href="https://smoltransport.ru/#p${p.id}" title="Скопировать ссылку на этот пост на сайте" data-done="Ссылка на пост на сайте скопирована">сайт</a> или <a class="rp-copy" href="${esc(p.url || "https://vk.ru/wall-102293762_" + p.id)}" target="_blank" rel="noopener" title="Скопировать ссылку на этот пост ВКонтакте" data-done="Ссылка на пост ВКонтакте скопирована">группу ВКонтакте</a>.</p>
+        <p class="rp-note">Фото и схемы без нашего оформления и логотипа. Их можно взять в свой пост, только поставьте, пожалуйста, ссылку на наш <a class="rp-copy" href="https://smoltransport.ru/#p${p.id}" title="Скопировать ссылку на этот пост на сайте" data-done="Ссылка на пост на сайте скопирована">сайт</a> или <a class="rp-copy" href="${esc(p.url || "https://vk.ru/wall-102293762_" + p.id)}" target="_blank" rel="noopener" title="Скопировать ссылку на этот пост ВКонтакте" data-done="Ссылка на пост ВКонтакте скопирована">группу ВКонтакте</a>.</p>
         <div class="rp-grid">${rp.map((x, k) => `<a class="rp-item${x.w > x.h ? " rp-wide" : ""}" href="${esc(x.full)}" download="smoltransport-${p.id}-${k + 1}.jpg">
           <img src="${esc(x.thumb || x.full)}" alt="Картинка ${k + 1} для перепоста"${x.w && x.h ? ` width="${x.w}" height="${x.h}"` : ""} loading="lazy">
           <span>Скачать${rp.length > 1 ? ` ${k + 1}` : ""}</span></a>`).join("")}</div>
