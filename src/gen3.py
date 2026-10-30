@@ -34,6 +34,8 @@ VCOVERS = json.load(open(sys.argv[7], encoding="utf-8")) if len(sys.argv) > 7 an
 REPOSTS = json.load(open(sys.argv[8], encoding="utf-8")) if len(sys.argv) > 8 and os.path.exists(sys.argv[8]) else {}
 # "_slugs" {"<post folder slug>": "<id>"}: smoltransport.ru/#s/<slug> is written in a post before VK gives it an id
 SLUGS = REPOSTS.pop("_slugs", {}) if isinstance(REPOSTS.get("_slugs"), dict) else {}
+# "_rich" {"<id>": "<text with links>"}: site text from a post folder (текст-сайта.txt), wins over links.jsonl
+SITE_RICH = REPOSTS.pop("_rich", {}) if isinstance(REPOSTS.get("_rich"), dict) else {}
 rows = json.load(open(SRC, encoding="utf-8"))
 DEFAULT_VTITLE = re.compile(r"^\s*((clip|video) by\b|.*\.(mp4|mov|avi|mkv|3gp|webm)\s*$|(vid|img|mov|video)[_-]?\d|\S{30,}\s*$)", re.I)  # VK defaults and file names, not real headings
 rich = {}
@@ -42,6 +44,7 @@ if os.path.exists(RICH):
         if l.strip():
             r = json.loads(l)
             rich[r["post_id"].split("_")[1]] = r["rich"]
+rich.update(SITE_RICH)
 arch = json.load(open(ARCH, encoding="utf-8")) if os.path.exists(ARCH) else []
 videos = {}
 if VIDS and os.path.exists(VIDS):
