@@ -275,8 +275,4 @@ header.mast.searching .hs-field { display: block; }
 /* schemes are 4:3 or square, slides 4:5: keep each picture whole */
 .rp-item img { width: 100%; height: auto; border-radius: 6px; display: block; background: var(--surface-2); }
 .rp-item:hover span { text-decoration: underline; }
-.rp-vk { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
-.rp-links { display: flex; flex-wrap: wrap; gap: 6px; }
-.rp-links a { min-width: 40px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--accent); text-align: center; text-decoration: none; font-weight: 600; font-size: 0.9375rem; }
-.rp-links a:hover { border-color: var(--accent); }
 @media (max-width: 480px) { .rp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

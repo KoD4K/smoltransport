@@ -557,10 +557,6 @@ header.mast.searching .hs-field { display: block; }
 /* schemes are 4:3 or square, slides 4:5: keep each picture whole */
 .rp-item img { width: 100%; height: auto; border-radius: 6px; display: block; background: var(--surface-2); }
 .rp-item:hover span { text-decoration: underline; }
-.rp-vk { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
-.rp-links { display: flex; flex-wrap: wrap; gap: 6px; }
-.rp-links a { min-width: 40px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--accent); text-align: center; text-decoration: none; font-weight: 600; font-size: 0.9375rem; }
-.rp-links a:hover { border-color: var(--accent); }
 @media (max-width: 480px) { .rp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 </head>
@@ -1191,8 +1187,8 @@ function renderPost(p) {
 }
 
 // «Для перепоста» (Evgenii 26.10.2026): other groups repost our slides, and a carousel's counter and chevrons look torn out
-// there. New posts with a для-перепоста/ folder get clean slides kept on our server (p.repost), plus the post's photos
-// in full size straight from VK, so they take no space here.
+// there. New posts with a для-перепоста/ folder get clean slides kept on our server (p.repost). Links to the post's slides
+// in full size from VK were dropped (Evgenii 30.10: «Везде убираем»).
 // «сайт» and «группу ВКонтакте» name this very post and copy its address on a click, so a group that takes a picture can
 // paste the link (Evgenii 27.10); without the clipboard (old browser, http) the link just opens.
 // Only when there is something to take: photos and clean schemes. Our own text cards in our style don't count (Evgenii
@@ -1201,15 +1197,12 @@ const RP_OFF = ["2026-10-29-otvet-pryamoy-linii", "139349"];
 function repostHtml(p) {
   const rp = p.repost || [];
   if (!rp.length || RP_OFF.some(k => String(p.id) === k || SLUG[k.toLowerCase()] == p.id)) return "";
-  const vk = p.photos.filter(ph => /^https?:/.test(ph.full || ""));
   return `<section class="repost" id="perepost" aria-labelledby="rp-h">
         <h2 id="rp-h">Для перепоста</h2>
         <p class="rp-note">Фото и схемы без нашего оформления и логотипа. Их можно взять в свой пост, только поставьте, пожалуйста, ссылку на наш <a class="rp-copy" href="https://smoltransport.ru/#p${p.id}" title="Скопировать ссылку на этот пост на сайте" data-done="Ссылка на пост на сайте скопирована">сайт</a> или <a class="rp-copy" href="${esc(p.url || "https://vk.ru/wall-102293762_" + p.id)}" target="_blank" rel="noopener" title="Скопировать ссылку на этот пост ВКонтакте" data-done="Ссылка на пост ВКонтакте скопирована">группу ВКонтакте</a>.</p>
         <div class="rp-grid">${rp.map((x, k) => `<a class="rp-item${x.w > x.h ? " rp-wide" : ""}" href="${esc(x.full)}" download="smoltransport-${p.id}-${k + 1}.jpg">
           <img src="${esc(x.thumb || x.full)}" alt="Картинка ${k + 1} для перепоста"${x.w && x.h ? ` width="${x.w}" height="${x.h}"` : ""} loading="lazy">
           <span>Скачать${rp.length > 1 ? ` ${k + 1}` : ""}</span></a>`).join("")}</div>
-        ${vk.length ? `<div class="rp-vk"><span class="src">Изображения поста в полном размере</span>
-          <div class="rp-links">${vk.map((ph, k) => `<a href="${esc(ph.full)}" target="_blank" rel="noopener" referrerpolicy="no-referrer" aria-label="Скачать изображение ${k + 1} из ${vk.length}">${vk.length > 1 ? k + 1 : "Скачать"}</a>`).join("")}</div></div>` : ""}
       </section>`;
 }
 
