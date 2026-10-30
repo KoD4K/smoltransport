@@ -2,6 +2,135 @@
  "_why": "«Главное за день»: сводка смоленских СМИ о транспорте, дорогах и ремонтах (Евгений 23.10.2026). Выходит по пн, ср и пт в 08:03 по Москве вместе с постом ВК (Евгений 28.10.2026); from — с какого времени по Москве показываем.",
  "items": [
   {
+   "id": "2026-10-30",
+   "from": "2026-10-30T08:03",
+   "title": "Главное за день: 28–29 октября",
+   "lede": "С вечера 30 октября до 8 ноября закрыта часть ул. Большой Советской и 22 автобусных маршрута пойдут по ул. Дзержинского, на маршруте № 14 недосчитались четырёх автобусов, а в Хиславичском округе отремонтировали мост через Сож.",
+   "lead": "Транспорт, дороги, ремонты и благоустройство: что писали смоленские СМИ в среду и четверг.",
+   "image": {
+    "src": "media/digest/2026-10-30-9026d10f.jpg",
+    "thumb": "media/digest/2026-10-30-9026d10f-t.jpg",
+    "w": 1600,
+    "h": 1200
+   },
+   "news": [
+    {
+     "text": "С 20:00 30 октября до 8 ноября закрыт участок ул. Большой Советской от ул. Козлова до перекрёстка с ул. Соболева: «Смоленская генерация» («РИР Энерго») меняет 70 м теплосети. 22 автобусных маршрута, среди них № 3, 7, 9, 13, 14, 16, 17, 19, 22, 31, 33, 38, 41, 46 и 52, поедут в обе стороны по ул. Дзержинского, Большой Краснофлотской и Студенческой; полный список — у администрации города.",
+     "sources": [
+      {
+       "label": "Администрация города Смоленска",
+       "href": "https://www.smoladmin.ru/press-centr/novosti/na-bolshoj-sovetskoj-vremenno-perekroyut-dvizhenie-transporta/"
+      },
+      {
+       "label": "SmolNarod",
+       "href": "https://smolnarod.ru/news/vlasti-perekroyut-ulicu-bolshuyu-sovetskuyu-v-smolenske-s-30-oktyabrya/"
+      },
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/auto/v-smolenske-zakroyut-chast-bolshoj-sovetskoj_664759"
+      }
+     ]
+    },
+    {
+     "text": "На ул. Шевченко у дома 86 обновили разметку: три полосы сократили до двух.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/auto/v-smolenske-izmenili-shemu-dvizheniya-na-ulicze-shevchenko_664671"
+      }
+     ]
+    },
+    {
+     "text": "Проверка маршрутов № 14 и № 38: на № 14 на участке ул. Шеина — ул. Кирова не вышли четыре автобуса среднего класса по расписанию, на № 38 утром нарушений не нашли, но раньше были сбои вечером. Перевозчикам выставили претензии, рейды продолжат.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/auto/vlasti-smolenska-napravili-pretenzii-perevozchikam-za-narusheniya-raboty-obshhestvennogo-transporta_664608"
+      },
+      {
+       "label": "SmolNarod",
+       "href": "https://smolnarod.ru/news/na-14-m-marshrute-v-smolenske-nedoschitalis-chetyrex-avtobusov/"
+      },
+      {
+       "label": "Администрация города Смоленска",
+       "href": "https://www.smoladmin.ru/press-centr/novosti/kachestvo-raboty-gorodskogo-passazhirskogo-transporta-v-smolenske-na-postoyannom-kontrole/"
+      }
+     ]
+    },
+    {
+     "text": "С 1 ноября по будням меняется расписание автобуса № 21 Пригородная — Корохоткино.",
+     "sources": [
+      {
+       "label": "Администрация города Смоленска",
+       "href": "https://www.smoladmin.ru/press-centr/novosti/v-raspisanie-dvizheniya-avtobusov-marshruta-21-vnosyatsya-izmeneniya/"
+      }
+     ]
+    },
+    {
+     "text": "На ул. Попова между домами 119 и 121 появился пешеходный переход: продлили тротуар, поставили знак и нанесли разметку.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/society/v-smolenske-poyavilsya-novyj-peshehodnyj-perehod-na-ulicze-popova_664588"
+      }
+     ]
+    },
+    {
+     "text": "В Хиславичском округе закончен капремонт железобетонного моста через Сож длиной 173 м: обновлены опоры, пролётное строение и полотно, обустроены подходы и ограждения.",
+     "sources": [
+      {
+       "label": "Правительство Смоленской области",
+       "href": "https://www.admin-smolensk.ru/novosti/news/v-hislavichskom-municipalnom-okruge-zavershilsya-kapremont-mosta-cherez-reku-sozh/"
+      },
+      {
+       "label": "«Смоленская газета»",
+       "href": "https://smolgazeta.ru/public/141556-v-hislavichskom-okruge-kapitalno.html"
+      }
+     ]
+    },
+    {
+     "text": "В Сычёвке на мосту через Вазузу начали укладку нового асфальта, ремонт выходит на финиш.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/auto/remont-mosta-cherez-smolenskuyu-reku-vazuzu-vyshel-na-finishnuyu-pryamuyu_664581"
+      }
+     ]
+    },
+    {
+     "text": "В этом году в Смоленске ремонтируют больше 20 межквартальных проездов, в том числе на ул. Ленина, Ломоносова, Рыленкова, пр. Гагарина и пр. Строителей.",
+     "sources": [
+      {
+       "label": "«Смоленская газета»",
+       "href": "https://smolgazeta.ru/public/141526-v-smolenske-otremontiruyut-bolee-20.html"
+      }
+     ]
+    },
+    {
+     "text": "В Реадовском парке закончили лыжероллерную трассу длиной 1751 м: асфальт, освещение, 33 камеры, разметка для спортсменов и пешеходов.",
+     "sources": [
+      {
+       "label": "Администрация города Смоленска",
+       "href": "https://www.smoladmin.ru/press-centr/novosti/v-readovskom-parke-zavershili-obustrojstvo-lyzherollernoj-trassy/"
+      },
+      {
+       "label": "«Смоленская газета»",
+       "href": "https://smolgazeta.ru/sport/141541-v-smolenske-zavershili-blagoustroystvo.html"
+      }
+     ]
+    },
+    {
+     "text": "Администрация направила претензию подрядчику игровой зоны в сквере Шеина и потребовала исправить благоустройство по гарантии: жители жалуются, что на игровом комплексе «Драккар» торчат металлические детали и есть незакреплённые тросы.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/society/vlasti-smolenska-napravili-pretenziyu-podryadchiku-rabot-v-skvere-sheina_664723"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "2026-10-28",
    "from": "2026-10-28T08:03",
    "title": "Главное за день: 26–27 октября",
