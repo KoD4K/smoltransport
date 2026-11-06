@@ -2,6 +2,97 @@
  "_why": "«Главное за день»: сводка смоленских СМИ о транспорте, дорогах и ремонтах (Евгений 23.10.2026). Выходит по пн, ср и пт в 08:03 по Москве вместе с постом ВК (Евгений 28.10.2026); from — с какого времени по Москве показываем.",
  "items": [
   {
+   "id": "2026-11-06",
+   "from": "2026-11-06T08:03",
+   "title": "Главное за день: 2–5 ноября",
+   "lede": "По общественному транспорту заработала горячая линия 122, а «Автоблюз» объявил подорожание на маршрутах 3Кн, 8н и 15н. Ещё ограничения на ул. Зои Космодемьянской, «зелёная волна» на ул. Крупской и пропавшая буква «С» на вокзале — на карточках.",
+   "lead": "Транспорт, дороги, ремонты и благоустройство: что писали смоленские СМИ с понедельника по четверг.",
+   "image": {
+    "src": "media/digest/2026-11-06-27b0766d.jpg",
+    "thumb": "media/digest/2026-11-06-27b0766d-t.jpg",
+    "w": 1600,
+    "h": 1200
+   },
+   "news": [
+    {
+     "text": "По общественному транспорту заработала горячая линия 122: добавочный 7 — автобусы ООО «ВМАП» (городские и пригородные), добавочный 8 — трамваи, троллейбусы и автобусы МУТТП. Можно спросить о расписании, оплате, транспортной карте, салонах, водителях и забытых вещах.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/society/v-smolenske-otkryta-goryachaya-liniya-po-voprosam-raboty-obshhestvennogo-transporta_665398"
+      }
+     ]
+    },
+    {
+     "text": "ООО «Автоблюз» объявило подорожание проезда на маршрутах 3Кн, 8н и 15н «через пару недель»; новую цену пока не назвали.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/society/v-smolenske-podorozhaet-proezd-v-marshrutkah-4_665481"
+      }
+     ]
+    },
+    {
+     "text": "На ул. Зои Космодемьянской у перекрёстка с ул. Нормандия-Неман появились знаки 50 км/ч и временный запрет движения мотоциклов с 23:00 до 6:00.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/auto/v-smolenske-ustanovili-novoe-ogranichenie-dlya-avtomobilistov_665308"
+      }
+     ]
+    },
+    {
+     "text": "На ул. Крупской «зелёная волна» сократила время проезда на 17 % и задержки на 22 %, на пр. Гагарина тестируют такую же координацию светофоров.",
+     "sources": [
+      {
+       "label": "SmolNarod",
+       "href": "https://smolnarod.ru/news/smolenskaya-oblast-predstavila-itogi-vnedreniya-its-na-forume-v-kazani/"
+      }
+     ]
+    },
+    {
+     "text": "В Сычёвском округе на дороге «Золотое кольцо» — Дугино — Некрасиха сняли старое покрытие, уложили два слоя асфальта и нанесли разметку на участках общей длиной около 6 км.",
+     "sources": [
+      {
+       "label": "Smolensk-i",
+       "href": "https://smolensk-i.ru/auto/v-smolenskoj-oblasti-otremontirovali-dorogu-ot-zolotogo-kolcza_665283"
+      }
+     ]
+    },
+    {
+     "text": "Главе города показали проект «Сад Пестеля» на месте бывшего Лютеранского кладбища на ул. Бакунина: тропы, фонари, таблички, скамейки и смотровая площадка; сроков пока нет, нужно согласование с археологами.",
+     "sources": [
+      {
+       "label": "SmolNarod",
+       "href": "https://smolnarod.ru/news/proekt-blagoustrojstva-byvshego-lyuteranskogo-kladbishha-v-smolenske-predstavili-glave-goroda/"
+      },
+      {
+       "label": "Администрация города Смоленска",
+       "href": "https://www.smoladmin.ru/press-centr/novosti/v-smolenske-obsudili-blagoustrojstvo-territorii-byvshego-lyuteranskogo-kladbischa/"
+      }
+     ]
+    },
+    {
+     "text": "На вокзале Смоленск после замены вывески шрифтом по чертежам 1950-х пропала буква «С», у пассажиров вопросы и к платной парковке у вокзала.",
+     "sources": [
+      {
+       "label": "SmolNarod",
+       "href": "https://smolnarod.ru/news/s-fasada-vokzala-v-smolenske-propala-bukva-s/"
+      }
+     ]
+    },
+    {
+     "text": "Администрация города спрашивает жителей, нужен ли ремонт лестницы между Больничным переулком и ул. Большой Краснофлотской.",
+     "sources": [
+      {
+       "label": "Администрация города Смоленска",
+       "href": "https://www.smoladmin.ru/press-centr/novosti/opros-smolyan-trebuetsya-li-remont-lestnicy-soedinyayuschej-bolnichnyj-pereulok-i-ulicu-bolshuyu-krasnoflotskuyu/"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "2026-11-02",
    "from": "2026-11-02T08:03",
    "title": "Главное за день: 30 октября — 1 ноября",
