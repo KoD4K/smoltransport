@@ -260,14 +260,15 @@ function itemHtml(p, lead) {
 }
 
 // A post shown first with a big picture of its own (Evgenii 20.10.2026: the tram's 125 years), site/featured.json:
-// {"items": [{"id", "until": "YYYY-MM-DD" (Moscow, last day shown), "image": {"src", "w", "h", "srcset"}, "alt",
+// {"items": [{"id", "from": "YYYY-MM-DDTHH:MM" (Moscow, shown from; Evgenii 07.11.2026: the news is on the site when the
+// VK post goes out), "until": "YYYY-MM-DD" (Moscow, last day shown), "image": {"src", "w", "h", "srcset"}, "alt",
 // "date", "title", "lede", "url", "post_photo"}]}; date, title, lede and url are used only until the post is in the site's
 // data; "post_photo": N puts our copy of the picture in place of the post's photo N on its page (VK's copy of 138942 is broken).
 const ANCHORS_LOAD = getJSON("link-anchors.json").then(d => { ANCHORS = d; }, () => {});
 let FEAT = [], FEAT_ALL = [];
 const FEAT_LOAD = getJSON("featured.json").then(d => {
-  const today = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
-  FEAT_ALL = (d.items || []).filter(x => x.id && x.image && x.image.src);
+  const now = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 16), today = now.slice(0, 10);
+  FEAT_ALL = (d.items || []).filter(x => x.id && x.image && x.image.src && (!x.from || now >= x.from));
   FEAT = FEAT_ALL.filter(x => !x.until || today <= x.until);
 }, () => {});
 function heroHtml(f) {
