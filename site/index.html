@@ -983,8 +983,8 @@ hsToggle.addEventListener("click", () => {
 // site/media/proposals/. The «Предложения» tab under «Материалы» shows only once there is at least one.
 let PROP = [];
 const PROP_LOAD = getJSON("proposals.json").then(d => { PROP = (d.items || []).filter(x => x.id && x.title); }, () => {});
-// «Главное за день» (Evgenii 23.10.2026): what Smolensk media wrote about transport, roads and repairs the day before,
-// published on weekdays at 08:03 Moscow with the VK post; Monday's issue covers Friday to Sunday (Evgenii 23.10). site/digest.json {"items": [{"id": "YYYY-MM-DD" (day published),
+// «Главное за неделю» (Evgenii 06.11.2026, was «Главное за день» since 23.10): what Smolensk media wrote about transport,
+// roads, repairs and благоустройство, published on Mondays at 08:03 Moscow with the VK post. site/digest.json {"items": [{"id": "YYYY-MM-DD" (day published),
 // "day": the day it covers, "from": "YYYY-MM-DDTHH:MM" Moscow (hidden before), "title", "lede" (card), "lead" (page),
 // "image": {"src", "thumb", "w", "h"}, "news": [{"text", "sources": [{"label", "href"}]}]}]}, pictures in site/media/digest/.
 let DIG = [];
@@ -994,7 +994,7 @@ const DIG_LOAD = getJSON("digest.json").then(d => {
 }, () => {});
 const mtabs = cur => PROP.length || DIG.length ? `<div class="mtabs" aria-label="Материалы">
     <a href="#"${cur === "feed" ? ' aria-current="page"' : ""}>Все материалы</a>
-    ${DIG.length ? `<a href="#glavnoe"${cur === "dig" ? ' aria-current="page"' : ""}>Главное за день</a>` : ""}
+    ${DIG.length ? `<a href="#glavnoe"${cur === "dig" ? ' aria-current="page"' : ""}>Главное за неделю</a>` : ""}
     ${PROP.length ? `<a href="#predlozheniya"${cur === "prop" ? ' aria-current="page"' : ""}>Предложения</a>` : ""}
   </div>` : "";
 function digCard(x) {
@@ -1015,8 +1015,8 @@ function renderDigests() {
       <div class="fh-row"><div class="eyebrow">Материалы</div></div>
       ${mtabs("dig")}
     </div>
-    <h1 class="page-title">Главное за день</h1>
-    <p class="lead-text">Что смоленские СМИ писали о транспорте, дорогах, ремонтах и благоустройстве. По понедельникам, средам и пятницам в 08:03, за дни с прошлого выпуска. Со ссылками на источники.</p>
+    <h1 class="page-title">Главное за неделю</h1>
+    <p class="lead-text">Что смоленские СМИ писали о транспорте, дорогах, ремонтах и благоустройстве. По понедельникам в 08:03, за прошедшую неделю. Со ссылками на источники.</p>
     ${DIG.length ? `<section class="section"><div class="feed">${DIG.map(digCard).join("")}</div></section>` : `<div class="empty">Выпусков пока нет.</div>`}`;
 }
 function renderDigest(id) {
@@ -1029,7 +1029,7 @@ function renderDigest(id) {
     ${back}
     <article>
       <div class="article-head">
-        <div class="eyebrow">Главное за день · ${human(x.id)}</div>
+        <div class="eyebrow">${esc((x.title || "").split(":")[0])} · ${human(x.id)}</div>
         <h1 class="page-title" style="margin-top:8px">${esc(x.title)}</h1>
         ${x.lead ? `<p class="lead-text">${esc(x.lead)}</p>` : ""}
       </div>
