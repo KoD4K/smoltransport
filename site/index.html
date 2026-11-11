@@ -540,6 +540,22 @@ header.mast.searching .hs-field { display: block; }
 .req p { margin: 0 0 8px; max-width: 65ch; }
 .req-meta { display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--muted); font-size: var(--step--1); }
 .req-status { padding-top: 2px; }
+/* Topics (Evgenii 11.11.2026): folded topics, topic and status buttons hidden behind «Фильтр» */
+.req-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.req-panel { max-width: 920px; margin-bottom: 14px; }
+#req-stats { margin: 0 0 10px; }
+.req-groups { border-top: 1px solid var(--line); max-width: 920px; }
+.req-group { border-bottom: 1px solid var(--line); }
+.req-group > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 16px; padding: 16px 0; }
+.req-group > summary::-webkit-details-marker { display: none; }
+.req-group > summary svg { grid-row: 1 / span 2; grid-column: 2; color: var(--muted); transition: transform .15s; }
+.req-group[open] > summary svg { transform: rotate(90deg); }
+.req-group > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.req-gt { font-family: var(--display); font-weight: 700; font-size: var(--step-1); line-height: 1.25; }
+.req-gs { color: var(--muted); font-size: var(--step--1); }
+.req-group .reqs { border-top: 0; padding-left: 14px; border-left: 2px solid var(--line); margin-bottom: 14px; }
+.req-group .req:last-child { border-bottom: 0; }
+@media (prefers-reduced-motion: reduce) { .req-group > summary svg { transition: none; } }
 @media (max-width: 720px) {
   .req { grid-template-columns: minmax(0, 1fr); }
   .req-status { order: -1; padding-top: 0; }
@@ -1428,8 +1444,17 @@ function reqStatus(r) {
   const due = r.extended || r.due;
   return `<span class="pill wait">Ждём ответ до ${dmy(due).slice(0, 5)}</span>`;
 }
-function reqListHtml(list) {
-  const rows = list.slice().sort((a, b) => b.sent.localeCompare(a.sent) || parseFloat(a.n) - parseFloat(b.n)).map(r => `
+// Grouped by topic (Evgenii 11.11.2026: «Компоновать по темам. Листать уже неудобно», then «фильтр типа рубрик»; he picked
+// «кнопки над свёрнутыми темами» with the buttons hidden behind «Фильтр»). requests.json "groups" [{id, short, title}]: title
+// heads a folded topic, short is its button; each item has "group", items without a known group go to «Другое». The freshest
+// topic (latest sent or answered) comes first. Picking a topic leaves it alone and open; picking a status keeps topics folded.
+// #zaprosy/<group id> opens with that topic picked. Opened topics stay open when the reader comes back from an answer.
+const req = { g: "", st: "", panel: false }, REQ_ST = { wait: "Ждём ответ", ok: "Есть ответ" }, reqOpen = new Set();
+let REQ = null;
+const reqSt = r => r.answer ? "ok" : "wait";
+const reqLast = r => [r.sent, r.answer && r.answer.date].filter(Boolean).sort().pop();
+function reqRow(r) {
+  return `
     <li class="req">
       <div class="req-main">
         <h3>${esc(r.topic)}</h3>
@@ -1437,12 +1462,77 @@ function reqListHtml(list) {
         <div class="req-meta"><span>${esc(REQ_TO[r.to] || r.to)}</span><span>Отправлено ${dmy(r.sent)}</span>${r.answer && (r.answer.formal || r.answer.partial) ? `<span>Ответ ${dmy(r.answer.date)}</span>` : ""}${r.extended ? `<span>Срок продлён</span>` : ""}${r.note ? `<span>${esc(r.note)}</span>` : ""}${r.answer && r.answer.href ? `<a href="${esc(r.answer.href)}">Читать ответ</a>` : ""}</div>
       </div>
       <div class="req-status">${reqStatus(r)}</div>
-    </li>`).join("");
-  return `<ol class="reqs">${rows}</ol>
+    </li>`;
+}
+function reqGroupsHtml(items) {
+  const titles = Object.fromEntries((REQ.groups || []).map(g => [g.id, g.title]));
+  const by = {};
+  items.forEach(r => { const g = titles[r.group] ? r.group : "drugoe"; (by[g] = by[g] || []).push(r); });
+  titles.drugoe = "Другое";
+  const groups = Object.entries(by).map(([id, list]) => {
+    list.sort((a, b) => b.sent.localeCompare(a.sent) || parseFloat(a.n) - parseFloat(b.n));
+    return { id, list, last: list.map(reqLast).sort().pop() };
+  }).sort((a, b) => b.last.localeCompare(a.last) || titles[a.id].localeCompare(titles[b.id], "ru"));
+  return `<div class="req-groups">${groups.map(g => {
+    const n = g.list.length, ok = g.list.filter(r => r.answer).length, wait = n - ok;
+    const sum = [`${n} ${plural(n, "обращение", "обращения", "обращений")}`, !req.st && ok && `${ok} с ответом`, !req.st && wait && `ждём ${wait}`].filter(Boolean).join(" · ");
+    return `<details class="req-group" id="tema-${esc(g.id)}" data-group="${esc(g.id)}"${req.g || reqOpen.has(g.id) ? " open" : ""}>
+      <summary><span class="req-gt">${esc(titles[g.id])}</span><span class="req-gs">${sum}</span>${chev(1, 18)}</summary>
+      <ol class="reqs">${g.list.map(reqRow).join("")}</ol>
+    </details>`;
+  }).join("")}</div>`;
+}
+function renderReqList() {
+  const box = document.getElementById("req-rows"), stats = document.getElementById("req-stats"), badge = document.getElementById("req-count");
+  if (!box) return;
+  const short = Object.fromEntries((REQ.groups || []).map(g => [g.id, g.short || g.title]));
+  const list = REQ.items.filter(r => (!req.g || r.group === req.g) && (!req.st || reqSt(r) === req.st));
+  const active = [short[req.g], REQ_ST[req.st]].filter(Boolean);
+  badge.textContent = active.length; badge.hidden = !active.length;
+  stats.innerHTML = active.length ? `Найдено: ${list.length} · ${esc(active.join(" · "))} <button class="reset-all" id="req-reset" type="button">Сбросить</button>` : "";
+  stats.hidden = !active.length;
+  if (active.length) document.getElementById("req-reset").addEventListener("click", () => { req.g = req.st = ""; syncReqChips(); renderReqList(); });
+  box.innerHTML = list.length ? reqGroupsHtml(list) : `<p class="prose" style="color:var(--muted)">Таких обращений нет.</p>`;
+  box.querySelectorAll("details[data-group]").forEach(el => el.addEventListener("toggle", () => {
+    if (req.g) return;  // a picked topic is open by the filter, not by the reader
+    if (el.open) reqOpen.add(el.dataset.group); else reqOpen.delete(el.dataset.group);
+  }));
+}
+function syncReqChips() {
+  document.querySelectorAll("#req-panel [data-g]").forEach(x => x.setAttribute("aria-pressed", x.dataset.g === req.g));
+  document.querySelectorAll("#req-panel [data-st]").forEach(x => x.setAttribute("aria-pressed", x.dataset.st === req.st));
+}
+function mountReqs(box) {
+  const gs = (REQ.groups || []).filter(g => REQ.items.some(r => r.group === g.id));
+  box.innerHTML = `
+    <h2>Отправленные обращения</h2>
+    <p class="prose" style="color:var(--muted);margin:0 0 14px">Пока издание не зарегистрировано, члены редакции отправляют вопросы как граждане, по закону № 59-ФЗ: ответ в течение 30 дней.</p>
+    <div class="req-head">
+      <button class="fbtn" id="req-toggle" type="button" aria-expanded="${req.panel}" aria-controls="req-panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        Фильтр <span class="f-count" id="req-count" hidden></span>
+      </button>
+    </div>
+    <div class="fpanel req-panel" id="req-panel"${req.panel ? "" : " hidden"}>
+      <div class="fgroup"><div class="flabel">Тема</div>
+        <div class="chips" role="group" aria-label="Тема">${gs.map(g =>
+          `<button class="chip" type="button" data-g="${esc(g.id)}" aria-pressed="false">${esc(g.short || g.title)}</button>`).join("")}</div></div>
+      <div class="fgroup"><div class="flabel">Статус</div>
+        <div class="chips" role="group" aria-label="Статус">${Object.entries(REQ_ST).map(([k, t]) =>
+          `<button class="chip" type="button" data-st="${k}" aria-pressed="false">${t}</button>`).join("")}</div></div>
+    </div>
+    <div class="feed-stats" id="req-stats" hidden></div>
+    <div id="req-rows"></div>
     <p class="src" style="margin-top:12px">Минтранс — Министерство транспорта и дорожного хозяйства Смоленской области. Управление транспорта — Управление транспорта и дорожного хозяйства Администрации города Смоленска.</p>`;
+  const tg = document.getElementById("req-toggle"), panel = document.getElementById("req-panel");
+  tg.addEventListener("click", () => { req.panel = !req.panel; panel.hidden = !req.panel; tg.setAttribute("aria-expanded", String(req.panel)); });
+  box.querySelectorAll("[data-g]").forEach(b => b.addEventListener("click", () => { req.g = req.g === b.dataset.g ? "" : b.dataset.g; syncReqChips(); renderReqList(); }));
+  box.querySelectorAll("[data-st]").forEach(b => b.addEventListener("click", () => { req.st = req.st === b.dataset.st ? "" : b.dataset.st; syncReqChips(); renderReqList(); }));
+  syncReqChips();
+  renderReqList();
 }
 
-function renderRequests(sub) {
+function renderRequests(sub, back) {
   setNav("zaprosy");
   view.innerHTML = `
     <div class="eyebrow">Запросы и ответы</div>
@@ -1455,25 +1545,30 @@ function renderRequests(sub) {
         <div><span class="big hl">7 дней</span><span>Ответ на запрос редакции СМИ</span><small>Закон «О СМИ», ст. 39–40. Об отказе или отсрочке орган сообщает за 3 дня.</small></div>
       </div>
     </section>
-    <section class="section">
+    <section class="section" id="req-list">
       <h2>Отправленные обращения</h2>
-      <p class="prose" style="color:var(--muted);margin:0 0 14px">Пока издание не зарегистрировано, члены редакции отправляют вопросы как граждане, по закону № 59-ФЗ: ответ в течение 30 дней.</p>
-      <div id="req-list"><div class="loading">Загружаем список…</div></div>
+      <div class="loading">Загружаем список…</div>
     </section>
     <section class="section" id="arhiv"><div class="loading">Загружаем архив ответов…</div></section>`;
   const seq = routeSeq;
-  getJSON("requests.json").then(d => d.items || [], () => null).then(list => {
+  const reqs = getJSON("requests.json").then(d => d, () => null).then(d => {
     const box = document.getElementById("req-list");
     if (seq !== routeSeq || !box) return;
-    box.innerHTML = list && list.length ? reqListHtml(list) : `<p class="prose">Список не загрузился. Обновите страницу.</p>`;
+    if (!d || !(d.items || []).length) { box.innerHTML = `<h2>Отправленные обращения</h2><p class="prose">Список не загрузился. Обновите страницу.</p>`; return; }
+    REQ = d;
+    if (sub && sub !== "arhiv" && (d.groups || []).some(g => g.id === sub)) { req.g = sub; req.st = ""; }
+    mountReqs(box);
+    if (req.g && sub === req.g && !back) box.scrollIntoView();
   });
-  loadAnswers().then(list => {
+  const arch = loadAnswers().then(list => {
     const box = document.getElementById("arhiv");
     if (seq !== routeSeq || !box) return;
     if (!list || !list.length) { box.remove(); return; }  // no archive on the server yet
     renderArchive(box);
     if (sub === "arhiv") window.scrollTo(0, ans.scrollY || box.getBoundingClientRect().top + window.scrollY - 12);
   });
+  // Back from an answer: return to where the reader was, once both lists have their height.
+  if (back && sub !== "arhiv") Promise.all([reqs, arch]).then(() => { if (seq === routeSeq && ans.scrollY) window.scrollTo(0, ans.scrollY); });
 }
 
 // The archive of official answers the group posted in its VK album: data/answers.json is written on the Mac,
@@ -1679,7 +1774,7 @@ function route() {
     }
   }
   else if (h === "raspisanie" || h.startsWith("raspisanie/")) { const again = lastHash.startsWith("raspisanie"); renderSchedule(h.split("/")[1]); if (!again) window.scrollTo(0, 0); }
-  else if (h === "zaprosy" || h === "zaprosy/arhiv") { window.scrollTo(0, 0); renderRequests(h.split("/")[1]); }
+  else if (h === "zaprosy" || h.startsWith("zaprosy/")) { const back = lastHash.startsWith("otvet/"); window.scrollTo(0, 0); renderRequests(h.split("/")[1], back); }
   else if (h.startsWith("otvet/")) { if (lastHash.startsWith("zaprosy")) ans.scrollY = window.scrollY; renderAnswer(h.slice(6)); window.scrollTo(0, 0); }
   else if (h === "redakciya") { renderAbout(); window.scrollTo(0, 0); }
   else if (h === "glavnoe") { renderDigests(); window.scrollTo(0, 0); }

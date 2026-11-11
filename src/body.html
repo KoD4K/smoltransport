@@ -420,8 +420,8 @@ hsToggle.addEventListener("click", () => {
 // site/media/proposals/. The «Предложения» tab under «Материалы» shows only once there is at least one.
 let PROP = [];
 const PROP_LOAD = getJSON("proposals.json").then(d => { PROP = (d.items || []).filter(x => x.id && x.title); }, () => {});
-// «Главное за день» (Evgenii 23.10.2026): what Smolensk media wrote about transport, roads and repairs the day before,
-// published on weekdays at 08:03 Moscow with the VK post; Monday's issue covers Friday to Sunday (Evgenii 23.10). site/digest.json {"items": [{"id": "YYYY-MM-DD" (day published),
+// «Главное за неделю» (Evgenii 06.11.2026, was «Главное за день» since 23.10): what Smolensk media wrote about transport,
+// roads, repairs and благоустройство, published on Mondays at 08:03 Moscow with the VK post. site/digest.json {"items": [{"id": "YYYY-MM-DD" (day published),
 // "day": the day it covers, "from": "YYYY-MM-DDTHH:MM" Moscow (hidden before), "title", "lede" (card), "lead" (page),
 // "image": {"src", "thumb", "w", "h"}, "news": [{"text", "sources": [{"label", "href"}]}]}]}, pictures in site/media/digest/.
 let DIG = [];
@@ -431,7 +431,7 @@ const DIG_LOAD = getJSON("digest.json").then(d => {
 }, () => {});
 const mtabs = cur => PROP.length || DIG.length ? `<div class="mtabs" aria-label="Материалы">
     <a href="#"${cur === "feed" ? ' aria-current="page"' : ""}>Все материалы</a>
-    ${DIG.length ? `<a href="#glavnoe"${cur === "dig" ? ' aria-current="page"' : ""}>Главное за день</a>` : ""}
+    ${DIG.length ? `<a href="#glavnoe"${cur === "dig" ? ' aria-current="page"' : ""}>Главное за неделю</a>` : ""}
     ${PROP.length ? `<a href="#predlozheniya"${cur === "prop" ? ' aria-current="page"' : ""}>Предложения</a>` : ""}
   </div>` : "";
 function digCard(x) {
@@ -452,8 +452,8 @@ function renderDigests() {
       <div class="fh-row"><div class="eyebrow">Материалы</div></div>
       ${mtabs("dig")}
     </div>
-    <h1 class="page-title">Главное за день</h1>
-    <p class="lead-text">Что смоленские СМИ писали о транспорте, дорогах, ремонтах и благоустройстве. По понедельникам, средам и пятницам в 08:03, за дни с прошлого выпуска. Со ссылками на источники.</p>
+    <h1 class="page-title">Главное за неделю</h1>
+    <p class="lead-text">Что смоленские СМИ писали о транспорте, дорогах, ремонтах и благоустройстве. По понедельникам в 08:03, за прошедшую неделю. Со ссылками на источники.</p>
     ${DIG.length ? `<section class="section"><div class="feed">${DIG.map(digCard).join("")}</div></section>` : `<div class="empty">Выпусков пока нет.</div>`}`;
 }
 function renderDigest(id) {
@@ -466,7 +466,7 @@ function renderDigest(id) {
     ${back}
     <article>
       <div class="article-head">
-        <div class="eyebrow">Главное за день · ${human(x.id)}</div>
+        <div class="eyebrow">${esc((x.title || "").split(":")[0])} · ${human(x.id)}</div>
         <h1 class="page-title" style="margin-top:8px">${esc(x.title)}</h1>
         ${x.lead ? `<p class="lead-text">${esc(x.lead)}</p>` : ""}
       </div>
@@ -859,25 +859,100 @@ const REQ_TO = {
 const dmy = d => d.split("-").reverse().join(".");
 function reqStatus(r) {
   if (r.answer && r.answer.formal) return `<span class="pill no">Ответ не по существу</span>`;  // e.g. one line about the contractor's word
+  if (r.answer && r.answer.partial) return `<span class="pill part">Ответ частичный</span>`;  // some questions answered, others not
   if (r.answer) return `<span class="pill ok">Ответ ${dmy(r.answer.date)}</span>`;
   const due = r.extended || r.due;
   return `<span class="pill wait">Ждём ответ до ${dmy(due).slice(0, 5)}</span>`;
 }
-function reqListHtml(list) {
-  const rows = list.slice().sort((a, b) => b.sent.localeCompare(a.sent) || parseFloat(a.n) - parseFloat(b.n)).map(r => `
+// Grouped by topic (Evgenii 11.11.2026: «Компоновать по темам. Листать уже неудобно», then «фильтр типа рубрик»; he picked
+// «кнопки над свёрнутыми темами» with the buttons hidden behind «Фильтр»). requests.json "groups" [{id, short, title}]: title
+// heads a folded topic, short is its button; each item has "group", items without a known group go to «Другое». The freshest
+// topic (latest sent or answered) comes first. Picking a topic leaves it alone and open; picking a status keeps topics folded.
+// #zaprosy/<group id> opens with that topic picked. Opened topics stay open when the reader comes back from an answer.
+const req = { g: "", st: "", panel: false }, REQ_ST = { wait: "Ждём ответ", ok: "Есть ответ" }, reqOpen = new Set();
+let REQ = null;
+const reqSt = r => r.answer ? "ok" : "wait";
+const reqLast = r => [r.sent, r.answer && r.answer.date].filter(Boolean).sort().pop();
+function reqRow(r) {
+  return `
     <li class="req">
       <div class="req-main">
         <h3>${esc(r.topic)}</h3>
         <p>${esc(r.asked)}</p>
-        <div class="req-meta"><span>${esc(REQ_TO[r.to] || r.to)}</span><span>Отправлено ${dmy(r.sent)}</span>${r.answer && r.answer.formal ? `<span>Ответ ${dmy(r.answer.date)}</span>` : ""}${r.extended ? `<span>Срок продлён</span>` : ""}${r.note ? `<span>${esc(r.note)}</span>` : ""}${r.answer && r.answer.href ? `<a href="${esc(r.answer.href)}">Читать ответ</a>` : ""}</div>
+        <div class="req-meta"><span>${esc(REQ_TO[r.to] || r.to)}</span><span>Отправлено ${dmy(r.sent)}</span>${r.answer && (r.answer.formal || r.answer.partial) ? `<span>Ответ ${dmy(r.answer.date)}</span>` : ""}${r.extended ? `<span>Срок продлён</span>` : ""}${r.note ? `<span>${esc(r.note)}</span>` : ""}${r.answer && r.answer.href ? `<a href="${esc(r.answer.href)}">Читать ответ</a>` : ""}</div>
       </div>
       <div class="req-status">${reqStatus(r)}</div>
-    </li>`).join("");
-  return `<ol class="reqs">${rows}</ol>
+    </li>`;
+}
+function reqGroupsHtml(items) {
+  const titles = Object.fromEntries((REQ.groups || []).map(g => [g.id, g.title]));
+  const by = {};
+  items.forEach(r => { const g = titles[r.group] ? r.group : "drugoe"; (by[g] = by[g] || []).push(r); });
+  titles.drugoe = "Другое";
+  const groups = Object.entries(by).map(([id, list]) => {
+    list.sort((a, b) => b.sent.localeCompare(a.sent) || parseFloat(a.n) - parseFloat(b.n));
+    return { id, list, last: list.map(reqLast).sort().pop() };
+  }).sort((a, b) => b.last.localeCompare(a.last) || titles[a.id].localeCompare(titles[b.id], "ru"));
+  return `<div class="req-groups">${groups.map(g => {
+    const n = g.list.length, ok = g.list.filter(r => r.answer).length, wait = n - ok;
+    const sum = [`${n} ${plural(n, "обращение", "обращения", "обращений")}`, !req.st && ok && `${ok} с ответом`, !req.st && wait && `ждём ${wait}`].filter(Boolean).join(" · ");
+    return `<details class="req-group" id="tema-${esc(g.id)}" data-group="${esc(g.id)}"${req.g || reqOpen.has(g.id) ? " open" : ""}>
+      <summary><span class="req-gt">${esc(titles[g.id])}</span><span class="req-gs">${sum}</span>${chev(1, 18)}</summary>
+      <ol class="reqs">${g.list.map(reqRow).join("")}</ol>
+    </details>`;
+  }).join("")}</div>`;
+}
+function renderReqList() {
+  const box = document.getElementById("req-rows"), stats = document.getElementById("req-stats"), badge = document.getElementById("req-count");
+  if (!box) return;
+  const short = Object.fromEntries((REQ.groups || []).map(g => [g.id, g.short || g.title]));
+  const list = REQ.items.filter(r => (!req.g || r.group === req.g) && (!req.st || reqSt(r) === req.st));
+  const active = [short[req.g], REQ_ST[req.st]].filter(Boolean);
+  badge.textContent = active.length; badge.hidden = !active.length;
+  stats.innerHTML = active.length ? `Найдено: ${list.length} · ${esc(active.join(" · "))} <button class="reset-all" id="req-reset" type="button">Сбросить</button>` : "";
+  stats.hidden = !active.length;
+  if (active.length) document.getElementById("req-reset").addEventListener("click", () => { req.g = req.st = ""; syncReqChips(); renderReqList(); });
+  box.innerHTML = list.length ? reqGroupsHtml(list) : `<p class="prose" style="color:var(--muted)">Таких обращений нет.</p>`;
+  box.querySelectorAll("details[data-group]").forEach(el => el.addEventListener("toggle", () => {
+    if (req.g) return;  // a picked topic is open by the filter, not by the reader
+    if (el.open) reqOpen.add(el.dataset.group); else reqOpen.delete(el.dataset.group);
+  }));
+}
+function syncReqChips() {
+  document.querySelectorAll("#req-panel [data-g]").forEach(x => x.setAttribute("aria-pressed", x.dataset.g === req.g));
+  document.querySelectorAll("#req-panel [data-st]").forEach(x => x.setAttribute("aria-pressed", x.dataset.st === req.st));
+}
+function mountReqs(box) {
+  const gs = (REQ.groups || []).filter(g => REQ.items.some(r => r.group === g.id));
+  box.innerHTML = `
+    <h2>Отправленные обращения</h2>
+    <p class="prose" style="color:var(--muted);margin:0 0 14px">Пока издание не зарегистрировано, члены редакции отправляют вопросы как граждане, по закону № 59-ФЗ: ответ в течение 30 дней.</p>
+    <div class="req-head">
+      <button class="fbtn" id="req-toggle" type="button" aria-expanded="${req.panel}" aria-controls="req-panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        Фильтр <span class="f-count" id="req-count" hidden></span>
+      </button>
+    </div>
+    <div class="fpanel req-panel" id="req-panel"${req.panel ? "" : " hidden"}>
+      <div class="fgroup"><div class="flabel">Тема</div>
+        <div class="chips" role="group" aria-label="Тема">${gs.map(g =>
+          `<button class="chip" type="button" data-g="${esc(g.id)}" aria-pressed="false">${esc(g.short || g.title)}</button>`).join("")}</div></div>
+      <div class="fgroup"><div class="flabel">Статус</div>
+        <div class="chips" role="group" aria-label="Статус">${Object.entries(REQ_ST).map(([k, t]) =>
+          `<button class="chip" type="button" data-st="${k}" aria-pressed="false">${t}</button>`).join("")}</div></div>
+    </div>
+    <div class="feed-stats" id="req-stats" hidden></div>
+    <div id="req-rows"></div>
     <p class="src" style="margin-top:12px">Минтранс — Министерство транспорта и дорожного хозяйства Смоленской области. Управление транспорта — Управление транспорта и дорожного хозяйства Администрации города Смоленска.</p>`;
+  const tg = document.getElementById("req-toggle"), panel = document.getElementById("req-panel");
+  tg.addEventListener("click", () => { req.panel = !req.panel; panel.hidden = !req.panel; tg.setAttribute("aria-expanded", String(req.panel)); });
+  box.querySelectorAll("[data-g]").forEach(b => b.addEventListener("click", () => { req.g = req.g === b.dataset.g ? "" : b.dataset.g; syncReqChips(); renderReqList(); }));
+  box.querySelectorAll("[data-st]").forEach(b => b.addEventListener("click", () => { req.st = req.st === b.dataset.st ? "" : b.dataset.st; syncReqChips(); renderReqList(); }));
+  syncReqChips();
+  renderReqList();
 }
 
-function renderRequests(sub) {
+function renderRequests(sub, back) {
   setNav("zaprosy");
   view.innerHTML = `
     <div class="eyebrow">Запросы и ответы</div>
@@ -890,25 +965,30 @@ function renderRequests(sub) {
         <div><span class="big hl">7 дней</span><span>Ответ на запрос редакции СМИ</span><small>Закон «О СМИ», ст. 39–40. Об отказе или отсрочке орган сообщает за 3 дня.</small></div>
       </div>
     </section>
-    <section class="section">
+    <section class="section" id="req-list">
       <h2>Отправленные обращения</h2>
-      <p class="prose" style="color:var(--muted);margin:0 0 14px">Пока издание не зарегистрировано, члены редакции отправляют вопросы как граждане, по закону № 59-ФЗ: ответ в течение 30 дней.</p>
-      <div id="req-list"><div class="loading">Загружаем список…</div></div>
+      <div class="loading">Загружаем список…</div>
     </section>
     <section class="section" id="arhiv"><div class="loading">Загружаем архив ответов…</div></section>`;
   const seq = routeSeq;
-  getJSON("requests.json").then(d => d.items || [], () => null).then(list => {
+  const reqs = getJSON("requests.json").then(d => d, () => null).then(d => {
     const box = document.getElementById("req-list");
     if (seq !== routeSeq || !box) return;
-    box.innerHTML = list && list.length ? reqListHtml(list) : `<p class="prose">Список не загрузился. Обновите страницу.</p>`;
+    if (!d || !(d.items || []).length) { box.innerHTML = `<h2>Отправленные обращения</h2><p class="prose">Список не загрузился. Обновите страницу.</p>`; return; }
+    REQ = d;
+    if (sub && sub !== "arhiv" && (d.groups || []).some(g => g.id === sub)) { req.g = sub; req.st = ""; }
+    mountReqs(box);
+    if (req.g && sub === req.g && !back) box.scrollIntoView();
   });
-  loadAnswers().then(list => {
+  const arch = loadAnswers().then(list => {
     const box = document.getElementById("arhiv");
     if (seq !== routeSeq || !box) return;
     if (!list || !list.length) { box.remove(); return; }  // no archive on the server yet
     renderArchive(box);
     if (sub === "arhiv") window.scrollTo(0, ans.scrollY || box.getBoundingClientRect().top + window.scrollY - 12);
   });
+  // Back from an answer: return to where the reader was, once both lists have their height.
+  if (back && sub !== "arhiv") Promise.all([reqs, arch]).then(() => { if (seq === routeSeq && ans.scrollY) window.scrollTo(0, ans.scrollY); });
 }
 
 // The archive of official answers the group posted in its VK album: data/answers.json is written on the Mac,
@@ -1114,7 +1194,7 @@ function route() {
     }
   }
   else if (h === "raspisanie" || h.startsWith("raspisanie/")) { const again = lastHash.startsWith("raspisanie"); renderSchedule(h.split("/")[1]); if (!again) window.scrollTo(0, 0); }
-  else if (h === "zaprosy" || h === "zaprosy/arhiv") { window.scrollTo(0, 0); renderRequests(h.split("/")[1]); }
+  else if (h === "zaprosy" || h.startsWith("zaprosy/")) { const back = lastHash.startsWith("otvet/"); window.scrollTo(0, 0); renderRequests(h.split("/")[1], back); }
   else if (h.startsWith("otvet/")) { if (lastHash.startsWith("zaprosy")) ans.scrollY = window.scrollY; renderAnswer(h.slice(6)); window.scrollTo(0, 0); }
   else if (h === "redakciya") { renderAbout(); window.scrollTo(0, 0); }
   else if (h === "glavnoe") { renderDigests(); window.scrollTo(0, 0); }

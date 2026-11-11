@@ -183,6 +183,7 @@ header.mast.searching .hs-field { display: block; }
 
 /* Archive of official answers (#zaprosy/arhiv, #otvet/<id>) */
 .pill.no { color: var(--no); }
+.pill.part { color: var(--accent); }
 .ans-intro { color: var(--muted); margin: 0; }
 .ans-h3 { font-family: var(--display); font-weight: 700; font-size: var(--step-1); margin: 28px 0 12px; }
 .picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
@@ -257,6 +258,22 @@ header.mast.searching .hs-field { display: block; }
 .req p { margin: 0 0 8px; max-width: 65ch; }
 .req-meta { display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--muted); font-size: var(--step--1); }
 .req-status { padding-top: 2px; }
+/* Topics (Evgenii 11.11.2026): folded topics, topic and status buttons hidden behind «Фильтр» */
+.req-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.req-panel { max-width: 920px; margin-bottom: 14px; }
+#req-stats { margin: 0 0 10px; }
+.req-groups { border-top: 1px solid var(--line); max-width: 920px; }
+.req-group { border-bottom: 1px solid var(--line); }
+.req-group > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 16px; padding: 16px 0; }
+.req-group > summary::-webkit-details-marker { display: none; }
+.req-group > summary svg { grid-row: 1 / span 2; grid-column: 2; color: var(--muted); transition: transform .15s; }
+.req-group[open] > summary svg { transform: rotate(90deg); }
+.req-group > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.req-gt { font-family: var(--display); font-weight: 700; font-size: var(--step-1); line-height: 1.25; }
+.req-gs { color: var(--muted); font-size: var(--step--1); }
+.req-group .reqs { border-top: 0; padding-left: 14px; border-left: 2px solid var(--line); margin-bottom: 14px; }
+.req-group .req:last-child { border-bottom: 0; }
+@media (prefers-reduced-motion: reduce) { .req-group > summary svg { transition: none; } }
 @media (max-width: 720px) {
   .req { grid-template-columns: minmax(0, 1fr); }
   .req-status { order: -1; padding-top: 0; }
