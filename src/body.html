@@ -591,6 +591,12 @@ function renderPost(p) {
     nav.innerHTML = `${newer ? `<a href="#p${newer.id}"><small>Новее · ${human(newer.date)}</small><span>${esc(newer.title)}</span></a>` : ""}
         ${older ? `<a class="next" href="#p${older.id}"><small>Раньше · ${human(older.date)}</small><span>${esc(older.title)}</span></a>` : ""}`;
   }).catch(() => {});
+  // the frame takes the first picture's proportions, so slides of one carousel meet edge to edge
+  const first = n && view.querySelector(".carousel .slide img");
+  if (first) {
+    const fit = () => { if (first.naturalWidth) first.closest(".carousel").style.setProperty("--ar", (first.naturalWidth / first.naturalHeight).toFixed(4)); };
+    first.complete ? fit() : first.addEventListener("load", fit, { once: true });
+  }
   if (n > 1) {
     const track = document.getElementById("track"), counter = document.getElementById("counter");
     const prev = document.getElementById("prev"), next = document.getElementById("next");

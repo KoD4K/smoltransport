@@ -202,7 +202,9 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .back:hover { color: var(--fg); }
 .article-head { display: flex; flex-direction: column; gap: 12px; max-width: 820px; margin-bottom: 24px; }
 
-.carousel { position: relative; max-width: 880px; background: var(--surface); border-radius: 10px; overflow: hidden; }
+/* The frame is exactly one picture wide (Evgenii 11.11.2026: slides sat far apart with grey fields on a computer, so their
+   designed seams looked cut): neighbours touch while swiping, as in VK. Until the first picture loads we assume 4:5. */
+.carousel { position: relative; width: 100%; max-width: min(880px, calc(78vh * var(--ar, 0.8))); background: var(--surface); border-radius: 10px; overflow: hidden; }
 .track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
 .track::-webkit-scrollbar { display: none; }
 .slide { flex: 0 0 100%; scroll-snap-align: start; display: flex; justify-content: center; align-items: center; }
@@ -1183,6 +1185,12 @@ function renderPost(p) {
     nav.innerHTML = `${newer ? `<a href="#p${newer.id}"><small>Новее · ${human(newer.date)}</small><span>${esc(newer.title)}</span></a>` : ""}
         ${older ? `<a class="next" href="#p${older.id}"><small>Раньше · ${human(older.date)}</small><span>${esc(older.title)}</span></a>` : ""}`;
   }).catch(() => {});
+  // the frame takes the first picture's proportions, so slides of one carousel meet edge to edge
+  const first = n && view.querySelector(".carousel .slide img");
+  if (first) {
+    const fit = () => { if (first.naturalWidth) first.closest(".carousel").style.setProperty("--ar", (first.naturalWidth / first.naturalHeight).toFixed(4)); };
+    first.complete ? fit() : first.addEventListener("load", fit, { once: true });
+  }
   if (n > 1) {
     const track = document.getElementById("track"), counter = document.getElementById("counter");
     const prev = document.getElementById("prev"), next = document.getElementById("next");
