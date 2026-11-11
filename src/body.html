@@ -873,13 +873,23 @@ const req = { g: "", st: "", panel: false }, REQ_ST = { wait: "Ждём отве
 let REQ = null;
 const reqSt = r => r.answer ? "ok" : "wait";
 const reqLast = r => [r.sent, r.answer && r.answer.date].filter(Boolean).sort().pop();
+// Question and answer apart (Evgenii 11.11.2026: «нужно разделить где вопрос, а где ответ»): «Вопрос» is what we asked,
+// the boxed «Ответ <date>» holds the note (what they answered) and the link to the letter; with no answer yet,
+// the box is «Что с обращением» (forwarded and so on).
 function reqRow(r) {
+  const a = r.answer, box = a || r.note ? `
+        <div class="req-ans${a ? "" : " wait"}">
+          <div class="req-lbl">${a ? `Ответ ${dmy(a.date)}` : "Что с обращением"}</div>
+          ${r.note ? `<p>${esc(r.note)}</p>` : ""}
+          ${a && a.href ? `<a href="${esc(a.href)}">Читать ответ целиком</a>` : ""}
+        </div>` : "";
   return `
     <li class="req">
       <div class="req-main">
         <h3>${esc(r.topic)}</h3>
+        <div class="req-lbl">Вопрос</div>
         <p>${esc(r.asked)}</p>
-        <div class="req-meta"><span>${esc(REQ_TO[r.to] || r.to)}</span><span>Отправлено ${dmy(r.sent)}</span>${r.answer && (r.answer.formal || r.answer.partial) ? `<span>Ответ ${dmy(r.answer.date)}</span>` : ""}${r.extended ? `<span>Срок продлён</span>` : ""}${r.note ? `<span>${esc(r.note)}</span>` : ""}${r.answer && r.answer.href ? `<a href="${esc(r.answer.href)}">Читать ответ</a>` : ""}</div>
+        <div class="req-meta"><span>${esc(REQ_TO[r.to] || r.to)}</span><span>Отправлено ${dmy(r.sent)}</span>${r.extended ? `<span>Срок продлён</span>` : ""}</div>${box}
       </div>
       <div class="req-status">${reqStatus(r)}</div>
     </li>`;
@@ -952,11 +962,21 @@ function mountReqs(box) {
   renderReqList();
 }
 
+// «Запросы и ответы» has two tabs (Evgenii 11.11.2026: the letters archive is its own section, not under the appeals):
+// «Обращения» (#zaprosy, #zaprosy/<topic id>) and «Все письма» (#zaprosy/arhiv).
+const ztabs = cur => `<div class="feed-head">
+      <div class="fh-row"><div class="eyebrow">Запросы и ответы</div></div>
+      <div class="mtabs" aria-label="Запросы и ответы">
+        <a href="#zaprosy"${cur === "req" ? ' aria-current="page"' : ""}>Обращения</a>
+        <a href="#zaprosy/arhiv"${cur === "arhiv" ? ' aria-current="page"' : ""}>Все письма</a>
+      </div>
+    </div>`;
 function renderRequests(sub, back) {
   setNav("zaprosy");
+  if (sub === "arhiv") return renderLetters(back);
   view.innerHTML = `
-    <div class="eyebrow">Запросы и ответы</div>
-    <h1 class="page-title" style="margin-top:8px">Что мы спросили у властей</h1>
+    ${ztabs("req")}
+    <h1 class="page-title">Что мы спросили у властей</h1>
     <p class="lead-text">Здесь наши вопросы администрации города, областному Минтрансу и МУТТП. Ответы публикуем целиком, со сканом, и отмечаем, если срок ответа нарушен.</p>
     <section class="section">
       <h2>Почему это быстрее</h2>
@@ -968,34 +988,39 @@ function renderRequests(sub, back) {
     <section class="section" id="req-list">
       <h2>Отправленные обращения</h2>
       <div class="loading">Загружаем список…</div>
-    </section>
-    <section class="section" id="arhiv"><div class="loading">Загружаем архив ответов…</div></section>`;
+    </section>`;
   const seq = routeSeq;
-  const reqs = getJSON("requests.json").then(d => d, () => null).then(d => {
+  getJSON("requests.json").then(d => d, () => null).then(d => {
     const box = document.getElementById("req-list");
     if (seq !== routeSeq || !box) return;
     if (!d || !(d.items || []).length) { box.innerHTML = `<h2>Отправленные обращения</h2><p class="prose">Список не загрузился. Обновите страницу.</p>`; return; }
     REQ = d;
-    if (sub && sub !== "arhiv" && (d.groups || []).some(g => g.id === sub)) { req.g = sub; req.st = ""; }
+    if (sub && (d.groups || []).some(g => g.id === sub)) { req.g = sub; req.st = ""; }
     mountReqs(box);
-    if (req.g && sub === req.g && !back) box.scrollIntoView();
+    if (back && ans.scrollY) window.scrollTo(0, ans.scrollY);  // back from an answer: where the reader was
+    else if (req.g && sub === req.g) box.scrollIntoView();
   });
-  const arch = loadAnswers().then(list => {
+}
+function renderLetters(back) {
+  view.innerHTML = `
+    ${ztabs("arhiv")}
+    <div id="arhiv"><div class="loading">Загружаем письма…</div></div>`;
+  const seq = routeSeq;
+  loadAnswers().then(list => {
     const box = document.getElementById("arhiv");
     if (seq !== routeSeq || !box) return;
-    if (!list || !list.length) { box.remove(); return; }  // no archive on the server yet
+    if (!list || !list.length) { box.innerHTML = `<div class="empty">Письма не загрузились. Обновите страницу.</div>`; return; }
     renderArchive(box);
-    if (sub === "arhiv") window.scrollTo(0, ans.scrollY || box.getBoundingClientRect().top + window.scrollY - 12);
+    if (back && ans.scrollY) window.scrollTo(0, ans.scrollY);
   });
-  // Back from an answer: return to where the reader was, once both lists have their height.
-  if (back && sub !== "arhiv") Promise.all([reqs, arch]).then(() => { if (seq === routeSeq && ans.scrollY) window.scrollTo(0, ans.scrollY); });
 }
 
 // The archive of official answers the group posted in its VK album: data/answers.json is written on the Mac,
 // the scans (private persons' names blacked out) are in thumbs/answers on our server, never loaded from VK.
-// The «обещали — вышло» picks are editorial text kept in the repo (answers-picks.json, {letter id: pick}).
+// The «обещали — вышло» picks are editorial text kept in the repo (answers-picks.json, {letter id: pick}). Since 11.11.2026
+// (Evgenii: the block on top was unclear) they show only as the pill on the letter and its page, found with «Проверили обещание».
 const PICK = { done: ["ok", "Выполнено"], partly: ["wait", "Выполнено частично"], not: ["no", "Не выполнено"], unclear: ["wait", "Пока не ясно"] };
-const ans = { q: "", qText: "", topic: "", sender: "", shown: PAGE, scrollY: 0 };
+const ans = { q: "", qText: "", topic: "", sender: "", pick: false, shown: PAGE, scrollY: 0, from: "" };
 const OTHER = "Другие ведомства";  // senders with a single letter share one filter entry
 let ANS = null, ANS_LOAD = null, ANS_ONE = new Set();
 const ansDate = a => a.date_approx === "year" ? `${a.date.slice(0, 4)} год` : human(a.date);
@@ -1016,6 +1041,7 @@ function loadAnswers() {
   }, () => { ANS_LOAD = null; return null; });
 }
 function ansMatches(a) {
+  if (ans.pick && !a.pick) return false;
   if (ans.topic && !(a.topics || []).includes(ans.topic)) return false;
   if (ans.sender && (ans.sender === OTHER ? !ANS_ONE.has(a.sender_short) : a.sender_short !== ans.sender)) return false;
   return !ans.q || ans.q.split(" ").every(w => a._hay.includes(w));
@@ -1037,22 +1063,15 @@ function renderArchive(box) {
   const topics = Object.entries(count("topics")).sort((x, y) => y[1] - x[1]).map(([t]) => t);
   const senders = Object.entries(count("sender_short")).filter(([, n]) => n > 1).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0], "ru")).map(([t]) => t);
   if (ANS_ONE.size > 1) senders.push(OTHER); else senders.push(...ANS_ONE);
-  const picks = ANS.filter(a => a.pick).sort((x, y) => (x.pick.order || 99) - (y.pick.order || 99));
+  const picks = ANS.some(a => a.pick);
   box.innerHTML = `
-      <h2>Архив ответов ${Math.min(...years)}–${Math.max(...years)}</h2>
-      <p class="prose ans-intro">Ответы ведомств на обращения читателей и участников группы, которые мы публиковали в альбоме ВКонтакте, и ответы на наши обращения через интернет-приёмную администрации города. У каждого письма есть скан. Личные данные частных лиц закрыты.</p>
-      ${picks.length ? `<h3 class="ans-h3">Что обещали и что вышло</h3>
-      <div class="picks">${picks.map(a => `<a class="pick" href="#otvet/${esc(a.id)}">
-          <small>${ansDate(a)} · ${esc(a.sender_short || a.sender)}</small>
-          <span><b>${pickLead(a.pick)}:</b> ${esc(a.pick.promised)}</span>
-          <span><b>Вышло:</b> ${esc(a.pick.outcome)}</span>
-          ${pickPill(a.pick.status)}
-        </a>`).join("")}</div>
-      <h3 class="ans-h3">Все письма</h3>` : ""}
+      <h1 class="page-title">Все письма</h1>
+      <p class="lead-text">Ответы ведомств за ${Math.min(...years)}–${Math.max(...years)} годы: на обращения читателей и участников группы, которые мы публиковали в альбоме ВКонтакте, и на наши обращения через интернет-приёмную администрации города. У каждого письма есть скан. Личные данные частных лиц закрыты.</p>
       <div class="ans-tools">
         <input id="ans-q" type="search" placeholder="Поиск по ответам" autocomplete="off" aria-label="Поиск по ответам" value="${esc(ans.qText)}">
         <div class="chips" role="group" aria-label="Тема">${topics.map(t =>
           `<button class="chip" type="button" data-topic="${esc(t)}" aria-pressed="${t === ans.topic}">${esc(t)}</button>`).join("")}</div>
+        ${picks ? `<div class="chips"><button class="chip" type="button" id="ans-pick" aria-pressed="${ans.pick}">Проверили обещание</button></div>` : ""}
         <select id="ans-sender" aria-label="Ведомство"><option value="">Все ведомства</option>${senders.map(t =>
           `<option${t === ans.sender ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>
       </div>
@@ -1070,15 +1089,17 @@ function renderArchive(box) {
     renderAnsList();
   }));
   document.getElementById("ans-sender").addEventListener("change", e => { ans.sender = e.target.value; ans.shown = PAGE; renderAnsList(); });
+  const pk = document.getElementById("ans-pick");
+  if (pk) pk.addEventListener("click", () => { ans.pick = !ans.pick; ans.shown = PAGE; pk.setAttribute("aria-pressed", ans.pick); renderAnsList(); });
   renderAnsList();
 }
 function renderAnsList() {
   const list = ANS.filter(ansMatches), stats = document.getElementById("ans-stats");
-  const active = [ans.qText && `«${ans.qText}»`, ans.topic, ans.sender].filter(Boolean);
+  const active = [ans.qText && `«${ans.qText}»`, ans.pick && "Проверили обещание", ans.topic, ans.sender].filter(Boolean);
   stats.innerHTML = active.length ? `Найдено: ${list.length} · ${esc(active.join(" · "))} <button class="reset-all" id="ans-reset" type="button">Сбросить</button>` : "";
   stats.hidden = !active.length;
   if (active.length) document.getElementById("ans-reset").addEventListener("click", () => {
-    Object.assign(ans, { q: "", qText: "", topic: "", sender: "", shown: PAGE });
+    Object.assign(ans, { q: "", qText: "", topic: "", sender: "", pick: false, shown: PAGE });
     renderArchive(document.getElementById("arhiv"));
   });
   document.getElementById("ans-list").innerHTML = list.slice(0, ans.shown).map(ansRow).join("")
@@ -1096,7 +1117,8 @@ function renderAnswer(id) {
     return;
   }
   const a = ANS.find(x => x.id === id);
-  const back = `<a class="back" href="#zaprosy/arhiv">${chev(-1, 16)} Все ответы</a>`;
+  const from = ans.from && ans.from !== "zaprosy/arhiv" ? ans.from : "zaprosy/arhiv";  // an appeal's «Читать ответ» leads back to the appeals
+  const back = `<a class="back" href="#${esc(from)}">${chev(-1, 16)} ${from === "zaprosy/arhiv" ? "Все письма" : "Обращения"}</a>`;
   if (!a) { view.innerHTML = `${back}<div class="empty">Такого письма в архиве нет.</div>`; return; }
   const pages = a.pages || [];
   view.innerHTML = `
@@ -1195,7 +1217,7 @@ function route() {
   }
   else if (h === "raspisanie" || h.startsWith("raspisanie/")) { const again = lastHash.startsWith("raspisanie"); renderSchedule(h.split("/")[1]); if (!again) window.scrollTo(0, 0); }
   else if (h === "zaprosy" || h.startsWith("zaprosy/")) { const back = lastHash.startsWith("otvet/"); window.scrollTo(0, 0); renderRequests(h.split("/")[1], back); }
-  else if (h.startsWith("otvet/")) { if (lastHash.startsWith("zaprosy")) ans.scrollY = window.scrollY; renderAnswer(h.slice(6)); window.scrollTo(0, 0); }
+  else if (h.startsWith("otvet/")) { if (lastHash.startsWith("zaprosy")) { ans.scrollY = window.scrollY; ans.from = lastHash; } else if (!lastHash.startsWith("otvet/")) ans.from = ""; renderAnswer(h.slice(6)); window.scrollTo(0, 0); }
   else if (h === "redakciya") { renderAbout(); window.scrollTo(0, 0); }
   else if (h === "glavnoe") { renderDigests(); window.scrollTo(0, 0); }
   else if (h.startsWith("glavnoe/")) { renderDigest(h.slice(8)); window.scrollTo(0, 0); }

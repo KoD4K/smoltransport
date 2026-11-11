@@ -184,7 +184,6 @@ header.mast.searching .hs-field { display: block; }
 /* Archive of official answers (#zaprosy/arhiv, #otvet/<id>) */
 .pill.no { color: var(--no); }
 .pill.part { color: var(--accent); }
-.ans-intro { color: var(--muted); margin: 0; }
 .ans-h3 { font-family: var(--display); font-weight: 700; font-size: var(--step-1); margin: 28px 0 12px; }
 .picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
 .pick { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px; border-radius: 14px; background: var(--surface); text-decoration: none; }
@@ -193,6 +192,11 @@ header.mast.searching .hs-field { display: block; }
 .ans-tools { display: grid; gap: 12px; margin: 18px 0 8px; }
 .ans-tools input, .ans-tools select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: min(100%, 420px); }
 .ans-tools input:focus, .ans-tools select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* The group's own arrow on drop-down lists (Evgenii 11.11.2026): one orange chevron slanted like the «Листайте» chevrons, away from the edge */
+.ans-tools select { appearance: none; -webkit-appearance: none; padding-right: 48px; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 12'%3E%3Cpath d='M3 2.5 L9 8.5 L15 2.5' transform='skewX(-14) translate(1.5 0)' fill='none' stroke='%23f28c28' stroke-width='3' stroke-linejoin='miter' stroke-linecap='butt'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 18px center; background-size: 18px 12px; }
+.ans-tools select::-ms-expand { display: none; }
 .ans { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 16px; padding-block: 14px; border-top: 1px solid var(--line); text-decoration: none; align-items: start; }
 .ans img, .ans .nophoto { width: 52px; height: auto; aspect-ratio: 240 / 340; object-fit: cover; object-position: top; border-radius: 3px; background: var(--surface); display: block; font-size: 0.75rem; }
 .ans:hover .ans-sum { color: var(--accent); }
@@ -258,6 +262,14 @@ header.mast.searching .hs-field { display: block; }
 .req p { margin: 0 0 8px; max-width: 65ch; }
 .req-meta { display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--muted); font-size: var(--step--1); }
 .req-status { padding-top: 2px; }
+.req-lbl { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0 0 4px; }
+.req-ans { margin-top: 14px; padding: 12px 16px; background: var(--surface); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; max-width: 72ch; }
+.req-ans.wait { border-left-color: var(--line); }
+.req-ans .req-lbl { color: var(--accent); }
+.req-ans.wait .req-lbl { color: var(--muted); }
+.req-ans p { margin: 0 0 6px; }
+.req-ans p:last-child { margin-bottom: 0; }
+.req-ans a { color: var(--accent); font-size: var(--step--1); }
 /* Topics (Evgenii 11.11.2026): folded topics, topic and status buttons hidden behind «Фильтр» */
 .req-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .req-panel { max-width: 920px; margin-bottom: 14px; }
