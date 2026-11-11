@@ -1460,10 +1460,10 @@ function reqRow(r) {
       <div class="req-status">${reqStatus(r)}</div>
     </li>`;
 }
-function reqListHtml(d) {
+function reqGroupsHtml(d, items, openAll) {
   const titles = Object.fromEntries((d.groups || []).map(g => [g.id, g.title]));
   const by = {};
-  (d.items || []).forEach(r => { const g = titles[r.group] ? r.group : "drugoe"; (by[g] = by[g] || []).push(r); });
+  items.forEach(r => { const g = titles[r.group] ? r.group : "drugoe"; (by[g] = by[g] || []).push(r); });
   titles.drugoe = "Другое";
   const groups = Object.entries(by).map(([id, list]) => {
     list.sort((a, b) => b.sent.localeCompare(a.sent) || parseFloat(a.n) - parseFloat(b.n));
@@ -1471,23 +1471,29 @@ function reqListHtml(d) {
   }).sort((a, b) => b.last.localeCompare(a.last) || (titles[a.id] || "").localeCompare(titles[b.id] || "", "ru"));
   const html = groups.map(g => {
     const n = g.list.length, ok = g.list.filter(r => r.answer).length, wait = n - ok;
-    const sum = [`${n} ${plural(n, "обращение", "обращения", "обращений")}`, ok && `${ok} с ответом`, wait && `ждём ${wait}`].filter(Boolean).join(" · ");
-    return `<details class="req-group" id="tema-${esc(g.id)}" data-group="${esc(g.id)}"${reqOpen.has(g.id) ? " open" : ""}>
+    const sum = [`${n} ${plural(n, "обращение", "обращения", "обращений")}`, !req.st && ok && `${ok} с ответом`, !req.st && wait && `ждём ${wait}`].filter(Boolean).join(" · ");
+    return `<details class="req-group" id="tema-${esc(g.id)}" data-group="${esc(g.id)}"${openAll || reqOpen.has(g.id) ? " open" : ""}>
       <summary><span class="req-gt">${esc(titles[g.id])}</span><span class="req-gs">${sum}</span>${chev(1, 18)}</summary>
       <ol class="reqs">${g.list.map(reqRow).join("")}</ol>
     </details>`;
   }).join("");
-  return `<div class="req-groups">${html}</div>
+  return `<div class="req-groups">${html}</div>`;
+}
+const reqToggles = box => box.querySelectorAll("details[data-group]").forEach(el => el.addEventListener("toggle", () => {
+  if (el.open) reqOpen.add(el.dataset.group); else reqOpen.delete(el.dataset.group);
+}));
+function reqListHtml(d) {
+  return `${reqGroupsHtml(d, d.items || [])}
     <p class="src" style="margin-top:12px">Минтранс — Министерство транспорта и дорожного хозяйства Смоленской области. Управление транспорта — Управление транспорта и дорожного хозяйства Администрации города Смоленска.</p>`;
 }
 
-const REQ_UI = 1;  // PREVIEW: 1 folded topics, 2 topic and status chips, 3 drop-down lists
+const REQ_UI = 1;  // PREVIEW: 1 folded topics, 2 topic and status chips, 3 drop-down lists, 4 chips over folded topics
 const req = { g: "", st: "", to: "" }, REQ_ST = { wait: "Ждём ответ", ok: "Есть ответ" };
 let REQ = null;
 const reqSt = r => r.answer ? "ok" : "wait";
 function reqToolsHtml(d) {
   const gs = (d.groups || []).filter(g => d.items.some(r => r.group === g.id));
-  if (REQ_UI === 2) return `<div class="ans-tools req-tools">
+  if (REQ_UI === 2 || REQ_UI === 4) return `<div class="ans-tools req-tools">
       <div class="chips" role="group" aria-label="Тема">${gs.map(g =>
         `<button class="chip" type="button" data-g="${esc(g.id)}" aria-pressed="${g.id === req.g}">${esc(g.short || g.title)}</button>`).join("")}</div>
       <div class="chips" role="group" aria-label="Статус">${Object.entries(REQ_ST).map(([k, t]) =>
@@ -1510,6 +1516,7 @@ function renderReqFiltered() {
   stats.innerHTML = active.length ? `Найдено: ${list.length} · ${esc(active.join(" · "))} <button class="reset-all" id="req-reset" type="button">Сбросить</button>` : "";
   stats.hidden = !active.length;
   if (active.length) document.getElementById("req-reset").addEventListener("click", () => { req.g = req.st = req.to = ""; mountReqFilter(); });
+  if (REQ_UI === 4 && list.length) { box.innerHTML = reqGroupsHtml(REQ, list, !!req.g); reqToggles(box); return; }  // a picked topic opens, otherwise topics stay folded
   box.innerHTML = list.length ? `<ol class="reqs">${list.map(reqRow).join("")}</ol>` : `<p class="prose" style="color:var(--muted)">Таких обращений нет.</p>`;
 }
 function mountReqFilter() {
@@ -1556,9 +1563,7 @@ function renderRequests(sub, back) {
     if (d && REQ_UI > 1 && (d.items || []).length) { REQ = d; if (sub && sub !== "arhiv") req.g = sub; mountReqFilter(); return; }
     if (sub && sub !== "arhiv") reqOpen.add(sub);
     box.innerHTML = d && (d.items || []).length ? reqListHtml(d) : `<p class="prose">Список не загрузился. Обновите страницу.</p>`;
-    box.querySelectorAll("details[data-group]").forEach(el => el.addEventListener("toggle", () => {
-      if (el.open) reqOpen.add(el.dataset.group); else reqOpen.delete(el.dataset.group);
-    }));
+    reqToggles(box);
     const one = sub && sub !== "arhiv" && document.getElementById("tema-" + sub);
     if (one && !back) one.scrollIntoView();
   });
