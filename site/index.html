@@ -465,6 +465,7 @@ header.mast.searching .hs-field { display: block; }
 
 /* Archive of official answers (#zaprosy/arhiv, #otvet/<id>) */
 .pill.no { color: var(--no); }
+.pill.part { color: var(--accent); }
 .ans-intro { color: var(--muted); margin: 0; }
 .ans-h3 { font-family: var(--display); font-weight: 700; font-size: var(--step-1); margin: 28px 0 12px; }
 .picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
@@ -1422,6 +1423,7 @@ const REQ_TO = {
 const dmy = d => d.split("-").reverse().join(".");
 function reqStatus(r) {
   if (r.answer && r.answer.formal) return `<span class="pill no">Ответ не по существу</span>`;  // e.g. one line about the contractor's word
+  if (r.answer && r.answer.partial) return `<span class="pill part">Ответ частичный</span>`;  // some questions answered, others not
   if (r.answer) return `<span class="pill ok">Ответ ${dmy(r.answer.date)}</span>`;
   const due = r.extended || r.due;
   return `<span class="pill wait">Ждём ответ до ${dmy(due).slice(0, 5)}</span>`;
@@ -1432,7 +1434,7 @@ function reqListHtml(list) {
       <div class="req-main">
         <h3>${esc(r.topic)}</h3>
         <p>${esc(r.asked)}</p>
-        <div class="req-meta"><span>${esc(REQ_TO[r.to] || r.to)}</span><span>Отправлено ${dmy(r.sent)}</span>${r.answer && r.answer.formal ? `<span>Ответ ${dmy(r.answer.date)}</span>` : ""}${r.extended ? `<span>Срок продлён</span>` : ""}${r.note ? `<span>${esc(r.note)}</span>` : ""}${r.answer && r.answer.href ? `<a href="${esc(r.answer.href)}">Читать ответ</a>` : ""}</div>
+        <div class="req-meta"><span>${esc(REQ_TO[r.to] || r.to)}</span><span>Отправлено ${dmy(r.sent)}</span>${r.answer && (r.answer.formal || r.answer.partial) ? `<span>Ответ ${dmy(r.answer.date)}</span>` : ""}${r.extended ? `<span>Срок продлён</span>` : ""}${r.note ? `<span>${esc(r.note)}</span>` : ""}${r.answer && r.answer.href ? `<a href="${esc(r.answer.href)}">Читать ответ</a>` : ""}</div>
       </div>
       <div class="req-status">${reqStatus(r)}</div>
     </li>`).join("");
