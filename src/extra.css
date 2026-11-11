@@ -183,6 +183,7 @@ header.mast.searching .hs-field { display: block; }
 
 /* Archive of official answers (#zaprosy/arhiv, #otvet/<id>) */
 .pill.no { color: var(--no); }
+.pill.part { color: var(--accent); }
 .ans-intro { color: var(--muted); margin: 0; }
 .ans-h3 { font-family: var(--display); font-weight: 700; font-size: var(--step-1); margin: 28px 0 12px; }
 .picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
