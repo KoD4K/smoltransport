@@ -864,10 +864,14 @@ function reqStatus(r) {
   const due = r.extended || r.due;
   return `<span class="pill wait">Ждём ответ до ${dmy(due).slice(0, 5)}</span>`;
 }
-// Grouped by topic (Evgenii 11.11.2026: «Компоновать по темам. Листать уже неудобно»): requests.json "groups" [{id, title}],
-// each item has "group"; items without a known group go to «Другое». Groups are folded, the freshest one (latest sent or
-// answered) comes first; #zaprosy/<group id> opens one group. Opened groups stay open when the reader comes back from an answer.
-const reqOpen = new Set();
+// Grouped by topic (Evgenii 11.11.2026: «Компоновать по темам. Листать уже неудобно», then «фильтр типа рубрик»; he picked
+// «кнопки над свёрнутыми темами» with the buttons hidden behind «Фильтр»). requests.json "groups" [{id, short, title}]: title
+// heads a folded topic, short is its button; each item has "group", items without a known group go to «Другое». The freshest
+// topic (latest sent or answered) comes first. Picking a topic leaves it alone and open; picking a status keeps topics folded.
+// #zaprosy/<group id> opens with that topic picked. Opened topics stay open when the reader comes back from an answer.
+const req = { g: "", st: "", panel: false }, REQ_ST = { wait: "Ждём ответ", ok: "Есть ответ" }, reqOpen = new Set();
+let REQ = null;
+const reqSt = r => r.answer ? "ok" : "wait";
 const reqLast = r => [r.sent, r.answer && r.answer.date].filter(Boolean).sort().pop();
 function reqRow(r) {
   return `
@@ -880,81 +884,72 @@ function reqRow(r) {
       <div class="req-status">${reqStatus(r)}</div>
     </li>`;
 }
-function reqGroupsHtml(d, items, openAll) {
-  const titles = Object.fromEntries((d.groups || []).map(g => [g.id, g.title]));
+function reqGroupsHtml(items) {
+  const titles = Object.fromEntries((REQ.groups || []).map(g => [g.id, g.title]));
   const by = {};
   items.forEach(r => { const g = titles[r.group] ? r.group : "drugoe"; (by[g] = by[g] || []).push(r); });
   titles.drugoe = "Другое";
   const groups = Object.entries(by).map(([id, list]) => {
     list.sort((a, b) => b.sent.localeCompare(a.sent) || parseFloat(a.n) - parseFloat(b.n));
     return { id, list, last: list.map(reqLast).sort().pop() };
-  }).sort((a, b) => b.last.localeCompare(a.last) || (titles[a.id] || "").localeCompare(titles[b.id] || "", "ru"));
-  const html = groups.map(g => {
+  }).sort((a, b) => b.last.localeCompare(a.last) || titles[a.id].localeCompare(titles[b.id], "ru"));
+  return `<div class="req-groups">${groups.map(g => {
     const n = g.list.length, ok = g.list.filter(r => r.answer).length, wait = n - ok;
     const sum = [`${n} ${plural(n, "обращение", "обращения", "обращений")}`, !req.st && ok && `${ok} с ответом`, !req.st && wait && `ждём ${wait}`].filter(Boolean).join(" · ");
-    return `<details class="req-group" id="tema-${esc(g.id)}" data-group="${esc(g.id)}"${openAll || reqOpen.has(g.id) ? " open" : ""}>
+    return `<details class="req-group" id="tema-${esc(g.id)}" data-group="${esc(g.id)}"${req.g || reqOpen.has(g.id) ? " open" : ""}>
       <summary><span class="req-gt">${esc(titles[g.id])}</span><span class="req-gs">${sum}</span>${chev(1, 18)}</summary>
       <ol class="reqs">${g.list.map(reqRow).join("")}</ol>
     </details>`;
-  }).join("");
-  return `<div class="req-groups">${html}</div>`;
+  }).join("")}</div>`;
 }
-const reqToggles = box => box.querySelectorAll("details[data-group]").forEach(el => el.addEventListener("toggle", () => {
-  if (el.open) reqOpen.add(el.dataset.group); else reqOpen.delete(el.dataset.group);
-}));
-function reqListHtml(d) {
-  return `${reqGroupsHtml(d, d.items || [])}
-    <p class="src" style="margin-top:12px">Минтранс — Министерство транспорта и дорожного хозяйства Смоленской области. Управление транспорта — Управление транспорта и дорожного хозяйства Администрации города Смоленска.</p>`;
-}
-
-const REQ_UI = 1;  // PREVIEW: 1 folded topics, 2 topic and status chips, 3 drop-down lists, 4 chips over folded topics
-const req = { g: "", st: "", to: "" }, REQ_ST = { wait: "Ждём ответ", ok: "Есть ответ" };
-let REQ = null;
-const reqSt = r => r.answer ? "ok" : "wait";
-function reqToolsHtml(d) {
-  const gs = (d.groups || []).filter(g => d.items.some(r => r.group === g.id));
-  if (REQ_UI === 2 || REQ_UI === 4) return `<div class="ans-tools req-tools">
-      <div class="chips" role="group" aria-label="Тема">${gs.map(g =>
-        `<button class="chip" type="button" data-g="${esc(g.id)}" aria-pressed="${g.id === req.g}">${esc(g.short || g.title)}</button>`).join("")}</div>
-      <div class="chips" role="group" aria-label="Статус">${Object.entries(REQ_ST).map(([k, t]) =>
-        `<button class="chip" type="button" data-st="${k}" aria-pressed="${k === req.st}">${t}</button>`).join("")}</div>
-    </div>`;
-  const tos = [...new Set(d.items.map(r => r.to))];
-  return `<div class="ans-tools req-tools req-sel">
-      <select id="req-g" aria-label="Тема"><option value="">Все темы</option>${gs.map(g => `<option value="${esc(g.id)}"${g.id === req.g ? " selected" : ""}>${esc(g.short || g.title)}</option>`).join("")}</select>
-      <select id="req-to" aria-label="Кому"><option value="">Все адресаты</option>${tos.map(t => `<option value="${esc(t)}"${t === req.to ? " selected" : ""}>${esc(REQ_TO[t] || t)}</option>`).join("")}</select>
-      <select id="req-st" aria-label="Статус"><option value="">Любой статус</option>${Object.entries(REQ_ST).map(([k, t]) => `<option value="${k}"${k === req.st ? " selected" : ""}>${t}</option>`).join("")}</select>
-    </div>`;
-}
-function renderReqFiltered() {
-  const box = document.getElementById("req-rows"), stats = document.getElementById("req-stats");
+function renderReqList() {
+  const box = document.getElementById("req-rows"), stats = document.getElementById("req-stats"), badge = document.getElementById("req-count");
   if (!box) return;
   const short = Object.fromEntries((REQ.groups || []).map(g => [g.id, g.short || g.title]));
-  const list = REQ.items.filter(r => (!req.g || r.group === req.g) && (!req.st || reqSt(r) === req.st) && (!req.to || r.to === req.to))
-    .sort((a, b) => b.sent.localeCompare(a.sent) || parseFloat(a.n) - parseFloat(b.n));
-  const active = [short[req.g], REQ_ST[req.st], req.to && (REQ_TO[req.to] || req.to)].filter(Boolean);
+  const list = REQ.items.filter(r => (!req.g || r.group === req.g) && (!req.st || reqSt(r) === req.st));
+  const active = [short[req.g], REQ_ST[req.st]].filter(Boolean);
+  badge.textContent = active.length; badge.hidden = !active.length;
   stats.innerHTML = active.length ? `Найдено: ${list.length} · ${esc(active.join(" · "))} <button class="reset-all" id="req-reset" type="button">Сбросить</button>` : "";
   stats.hidden = !active.length;
-  if (active.length) document.getElementById("req-reset").addEventListener("click", () => { req.g = req.st = req.to = ""; mountReqFilter(); });
-  if (REQ_UI === 4 && list.length) { box.innerHTML = reqGroupsHtml(REQ, list, !!req.g); reqToggles(box); return; }  // a picked topic opens, otherwise topics stay folded
-  box.innerHTML = list.length ? `<ol class="reqs">${list.map(reqRow).join("")}</ol>` : `<p class="prose" style="color:var(--muted)">Таких обращений нет.</p>`;
+  if (active.length) document.getElementById("req-reset").addEventListener("click", () => { req.g = req.st = ""; syncReqChips(); renderReqList(); });
+  box.innerHTML = list.length ? reqGroupsHtml(list) : `<p class="prose" style="color:var(--muted)">Таких обращений нет.</p>`;
+  box.querySelectorAll("details[data-group]").forEach(el => el.addEventListener("toggle", () => {
+    if (req.g) return;  // a picked topic is open by the filter, not by the reader
+    if (el.open) reqOpen.add(el.dataset.group); else reqOpen.delete(el.dataset.group);
+  }));
 }
-function mountReqFilter() {
-  const box = document.getElementById("req-list");
-  box.innerHTML = `${reqToolsHtml(REQ)}<div class="feed-stats" id="req-stats" hidden></div><div id="req-rows"></div>
+function syncReqChips() {
+  document.querySelectorAll("#req-panel [data-g]").forEach(x => x.setAttribute("aria-pressed", x.dataset.g === req.g));
+  document.querySelectorAll("#req-panel [data-st]").forEach(x => x.setAttribute("aria-pressed", x.dataset.st === req.st));
+}
+function mountReqs(box) {
+  const gs = (REQ.groups || []).filter(g => REQ.items.some(r => r.group === g.id));
+  box.innerHTML = `
+    <h2>Отправленные обращения</h2>
+    <p class="prose" style="color:var(--muted);margin:0 0 14px">Пока издание не зарегистрировано, члены редакции отправляют вопросы как граждане, по закону № 59-ФЗ: ответ в течение 30 дней.</p>
+    <div class="req-head">
+      <button class="fbtn" id="req-toggle" type="button" aria-expanded="${req.panel}" aria-controls="req-panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        Фильтр <span class="f-count" id="req-count" hidden></span>
+      </button>
+    </div>
+    <div class="fpanel req-panel" id="req-panel"${req.panel ? "" : " hidden"}>
+      <div class="fgroup"><div class="flabel">Тема</div>
+        <div class="chips" role="group" aria-label="Тема">${gs.map(g =>
+          `<button class="chip" type="button" data-g="${esc(g.id)}" aria-pressed="false">${esc(g.short || g.title)}</button>`).join("")}</div></div>
+      <div class="fgroup"><div class="flabel">Статус</div>
+        <div class="chips" role="group" aria-label="Статус">${Object.entries(REQ_ST).map(([k, t]) =>
+          `<button class="chip" type="button" data-st="${k}" aria-pressed="false">${t}</button>`).join("")}</div></div>
+    </div>
+    <div class="feed-stats" id="req-stats" hidden></div>
+    <div id="req-rows"></div>
     <p class="src" style="margin-top:12px">Минтранс — Министерство транспорта и дорожного хозяйства Смоленской области. Управление транспорта — Управление транспорта и дорожного хозяйства Администрации города Смоленска.</p>`;
-  box.querySelectorAll("[data-g]").forEach(b => b.addEventListener("click", () => {
-    req.g = req.g === b.dataset.g ? "" : b.dataset.g;
-    box.querySelectorAll("[data-g]").forEach(x => x.setAttribute("aria-pressed", x.dataset.g === req.g)); renderReqFiltered();
-  }));
-  box.querySelectorAll("[data-st]").forEach(b => b.addEventListener("click", () => {
-    req.st = req.st === b.dataset.st ? "" : b.dataset.st;
-    box.querySelectorAll("[data-st]").forEach(x => x.setAttribute("aria-pressed", x.dataset.st === req.st)); renderReqFiltered();
-  }));
-  [["req-g", "g"], ["req-to", "to"], ["req-st", "st"]].forEach(([id, k]) => {
-    const el = document.getElementById(id); if (el) el.addEventListener("change", e => { req[k] = e.target.value; renderReqFiltered(); });
-  });
-  renderReqFiltered();
+  const tg = document.getElementById("req-toggle"), panel = document.getElementById("req-panel");
+  tg.addEventListener("click", () => { req.panel = !req.panel; panel.hidden = !req.panel; tg.setAttribute("aria-expanded", String(req.panel)); });
+  box.querySelectorAll("[data-g]").forEach(b => b.addEventListener("click", () => { req.g = req.g === b.dataset.g ? "" : b.dataset.g; syncReqChips(); renderReqList(); }));
+  box.querySelectorAll("[data-st]").forEach(b => b.addEventListener("click", () => { req.st = req.st === b.dataset.st ? "" : b.dataset.st; syncReqChips(); renderReqList(); }));
+  syncReqChips();
+  renderReqList();
 }
 
 function renderRequests(sub, back) {
@@ -970,22 +965,20 @@ function renderRequests(sub, back) {
         <div><span class="big hl">7 дней</span><span>Ответ на запрос редакции СМИ</span><small>Закон «О СМИ», ст. 39–40. Об отказе или отсрочке орган сообщает за 3 дня.</small></div>
       </div>
     </section>
-    <section class="section">
+    <section class="section" id="req-list">
       <h2>Отправленные обращения</h2>
-      <p class="prose" style="color:var(--muted);margin:0 0 14px">Пока издание не зарегистрировано, члены редакции отправляют вопросы как граждане, по закону № 59-ФЗ: ответ в течение 30 дней.</p>
-      <div id="req-list"><div class="loading">Загружаем список…</div></div>
+      <div class="loading">Загружаем список…</div>
     </section>
     <section class="section" id="arhiv"><div class="loading">Загружаем архив ответов…</div></section>`;
   const seq = routeSeq;
   const reqs = getJSON("requests.json").then(d => d, () => null).then(d => {
     const box = document.getElementById("req-list");
     if (seq !== routeSeq || !box) return;
-    if (d && REQ_UI > 1 && (d.items || []).length) { REQ = d; if (sub && sub !== "arhiv") req.g = sub; mountReqFilter(); return; }
-    if (sub && sub !== "arhiv") reqOpen.add(sub);
-    box.innerHTML = d && (d.items || []).length ? reqListHtml(d) : `<p class="prose">Список не загрузился. Обновите страницу.</p>`;
-    reqToggles(box);
-    const one = sub && sub !== "arhiv" && document.getElementById("tema-" + sub);
-    if (one && !back) one.scrollIntoView();
+    if (!d || !(d.items || []).length) { box.innerHTML = `<h2>Отправленные обращения</h2><p class="prose">Список не загрузился. Обновите страницу.</p>`; return; }
+    REQ = d;
+    if (sub && sub !== "arhiv" && (d.groups || []).some(g => g.id === sub)) { req.g = sub; req.st = ""; }
+    mountReqs(box);
+    if (req.g && sub === req.g && !back) box.scrollIntoView();
   });
   const arch = loadAnswers().then(list => {
     const box = document.getElementById("arhiv");
@@ -994,7 +987,7 @@ function renderRequests(sub, back) {
     renderArchive(box);
     if (sub === "arhiv") window.scrollTo(0, ans.scrollY || box.getBoundingClientRect().top + window.scrollY - 12);
   });
-  // Back from an answer to the plain list: return to where the reader was, once both lists have their height.
+  // Back from an answer: return to where the reader was, once both lists have their height.
   if (back && sub !== "arhiv") Promise.all([reqs, arch]).then(() => { if (seq === routeSeq && ans.scrollY) window.scrollTo(0, ans.scrollY); });
 }
 
