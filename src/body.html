@@ -420,8 +420,8 @@ hsToggle.addEventListener("click", () => {
 // site/media/proposals/. The «Предложения» tab under «Материалы» shows only once there is at least one.
 let PROP = [];
 const PROP_LOAD = getJSON("proposals.json").then(d => { PROP = (d.items || []).filter(x => x.id && x.title); }, () => {});
-// «Главное за день» (Evgenii 23.10.2026): what Smolensk media wrote about transport, roads and repairs the day before,
-// published on weekdays at 08:03 Moscow with the VK post; Monday's issue covers Friday to Sunday (Evgenii 23.10). site/digest.json {"items": [{"id": "YYYY-MM-DD" (day published),
+// «Главное за неделю» (Evgenii 06.11.2026, was «Главное за день» since 23.10): what Smolensk media wrote about transport,
+// roads, repairs and благоустройство, published on Mondays at 08:03 Moscow with the VK post. site/digest.json {"items": [{"id": "YYYY-MM-DD" (day published),
 // "day": the day it covers, "from": "YYYY-MM-DDTHH:MM" Moscow (hidden before), "title", "lede" (card), "lead" (page),
 // "image": {"src", "thumb", "w", "h"}, "news": [{"text", "sources": [{"label", "href"}]}]}]}, pictures in site/media/digest/.
 let DIG = [];
@@ -431,7 +431,7 @@ const DIG_LOAD = getJSON("digest.json").then(d => {
 }, () => {});
 const mtabs = cur => PROP.length || DIG.length ? `<div class="mtabs" aria-label="Материалы">
     <a href="#"${cur === "feed" ? ' aria-current="page"' : ""}>Все материалы</a>
-    ${DIG.length ? `<a href="#glavnoe"${cur === "dig" ? ' aria-current="page"' : ""}>Главное за день</a>` : ""}
+    ${DIG.length ? `<a href="#glavnoe"${cur === "dig" ? ' aria-current="page"' : ""}>Главное за неделю</a>` : ""}
     ${PROP.length ? `<a href="#predlozheniya"${cur === "prop" ? ' aria-current="page"' : ""}>Предложения</a>` : ""}
   </div>` : "";
 function digCard(x) {
@@ -452,8 +452,8 @@ function renderDigests() {
       <div class="fh-row"><div class="eyebrow">Материалы</div></div>
       ${mtabs("dig")}
     </div>
-    <h1 class="page-title">Главное за день</h1>
-    <p class="lead-text">Что смоленские СМИ писали о транспорте, дорогах, ремонтах и благоустройстве. По понедельникам, средам и пятницам в 08:03, за дни с прошлого выпуска. Со ссылками на источники.</p>
+    <h1 class="page-title">Главное за неделю</h1>
+    <p class="lead-text">Что смоленские СМИ писали о транспорте, дорогах, ремонтах и благоустройстве. По понедельникам в 08:03, за прошедшую неделю. Со ссылками на источники.</p>
     ${DIG.length ? `<section class="section"><div class="feed">${DIG.map(digCard).join("")}</div></section>` : `<div class="empty">Выпусков пока нет.</div>`}`;
 }
 function renderDigest(id) {
@@ -466,7 +466,7 @@ function renderDigest(id) {
     ${back}
     <article>
       <div class="article-head">
-        <div class="eyebrow">Главное за день · ${human(x.id)}</div>
+        <div class="eyebrow">${esc((x.title || "").split(":")[0])} · ${human(x.id)}</div>
         <h1 class="page-title" style="margin-top:8px">${esc(x.title)}</h1>
         ${x.lead ? `<p class="lead-text">${esc(x.lead)}</p>` : ""}
       </div>
@@ -591,6 +591,12 @@ function renderPost(p) {
     nav.innerHTML = `${newer ? `<a href="#p${newer.id}"><small>Новее · ${human(newer.date)}</small><span>${esc(newer.title)}</span></a>` : ""}
         ${older ? `<a class="next" href="#p${older.id}"><small>Раньше · ${human(older.date)}</small><span>${esc(older.title)}</span></a>` : ""}`;
   }).catch(() => {});
+  // the frame takes the first picture's proportions, so slides of one carousel meet edge to edge
+  const first = n && view.querySelector(".carousel .slide img");
+  if (first) {
+    const fit = () => { if (first.naturalWidth) first.closest(".carousel").style.setProperty("--ar", (first.naturalWidth / first.naturalHeight).toFixed(4)); };
+    first.complete ? fit() : first.addEventListener("load", fit, { once: true });
+  }
   if (n > 1) {
     const track = document.getElementById("track"), counter = document.getElementById("counter");
     const prev = document.getElementById("prev"), next = document.getElementById("next");
@@ -859,29 +865,124 @@ const REQ_TO = {
 const dmy = d => d.split("-").reverse().join(".");
 function reqStatus(r) {
   if (r.answer && r.answer.formal) return `<span class="pill no">Ответ не по существу</span>`;  // e.g. one line about the contractor's word
+  if (r.answer && r.answer.partial) return `<span class="pill part">Ответ частичный</span>`;  // some questions answered, others not
   if (r.answer) return `<span class="pill ok">Ответ ${dmy(r.answer.date)}</span>`;
   const due = r.extended || r.due;
   return `<span class="pill wait">Ждём ответ до ${dmy(due).slice(0, 5)}</span>`;
 }
-function reqListHtml(list) {
-  const rows = list.slice().sort((a, b) => b.sent.localeCompare(a.sent) || parseFloat(a.n) - parseFloat(b.n)).map(r => `
+// Grouped by topic (Evgenii 11.11.2026: «Компоновать по темам. Листать уже неудобно», then «фильтр типа рубрик»; he picked
+// «кнопки над свёрнутыми темами» with the buttons hidden behind «Фильтр»). requests.json "groups" [{id, short, title}]: title
+// heads a folded topic, short is its button; each item has "group", items without a known group go to «Другое». The freshest
+// topic (latest sent or answered) comes first. Picking a topic leaves it alone and open; picking a status keeps topics folded.
+// #zaprosy/<group id> opens with that topic picked. Opened topics stay open when the reader comes back from an answer.
+const req = { g: "", st: "", panel: false }, REQ_ST = { wait: "Ждём ответ", ok: "Есть ответ" }, reqOpen = new Set();
+let REQ = null;
+const reqSt = r => r.answer ? "ok" : "wait";
+const reqLast = r => [r.sent, r.answer && r.answer.date].filter(Boolean).sort().pop();
+// Question and answer apart (Evgenii 11.11.2026: «нужно разделить где вопрос, а где ответ»): «Вопрос» is what we asked,
+// the boxed «Ответ <date>» holds the note (what they answered) and the link to the letter; with no answer yet,
+// the box is «Что с обращением» (forwarded and so on).
+function reqRow(r) {
+  const a = r.answer, box = a || r.note ? `
+        <div class="req-ans${a ? "" : " wait"}">
+          <div class="req-lbl">${a ? `Ответ ${dmy(a.date)}` : "Что с обращением"}</div>
+          ${r.note ? `<p>${esc(r.note)}</p>` : ""}
+          ${a && a.href ? `<a href="${esc(a.href)}">Читать ответ целиком</a>` : ""}
+        </div>` : "";
+  return `
     <li class="req">
       <div class="req-main">
         <h3>${esc(r.topic)}</h3>
+        <div class="req-lbl">Вопрос</div>
         <p>${esc(r.asked)}</p>
-        <div class="req-meta"><span>${esc(REQ_TO[r.to] || r.to)}</span><span>Отправлено ${dmy(r.sent)}</span>${r.answer && r.answer.formal ? `<span>Ответ ${dmy(r.answer.date)}</span>` : ""}${r.extended ? `<span>Срок продлён</span>` : ""}${r.note ? `<span>${esc(r.note)}</span>` : ""}${r.answer && r.answer.href ? `<a href="${esc(r.answer.href)}">Читать ответ</a>` : ""}</div>
+        <div class="req-meta"><span>${esc(REQ_TO[r.to] || r.to)}</span><span>Отправлено ${dmy(r.sent)}</span>${r.extended ? `<span>Срок продлён</span>` : ""}</div>${box}
       </div>
       <div class="req-status">${reqStatus(r)}</div>
-    </li>`).join("");
-  return `<ol class="reqs">${rows}</ol>
+    </li>`;
+}
+function reqGroupsHtml(items) {
+  const titles = Object.fromEntries((REQ.groups || []).map(g => [g.id, g.title]));
+  const by = {};
+  items.forEach(r => { const g = titles[r.group] ? r.group : "drugoe"; (by[g] = by[g] || []).push(r); });
+  titles.drugoe = "Другое";
+  const groups = Object.entries(by).map(([id, list]) => {
+    list.sort((a, b) => b.sent.localeCompare(a.sent) || parseFloat(a.n) - parseFloat(b.n));
+    return { id, list, last: list.map(reqLast).sort().pop() };
+  }).sort((a, b) => b.last.localeCompare(a.last) || titles[a.id].localeCompare(titles[b.id], "ru"));
+  return `<div class="req-groups">${groups.map(g => {
+    const n = g.list.length, ok = g.list.filter(r => r.answer).length, wait = n - ok;
+    const sum = [`${n} ${plural(n, "обращение", "обращения", "обращений")}`, !req.st && ok && `${ok} с ответом`, !req.st && wait && `ждём ${wait}`].filter(Boolean).join(" · ");
+    return `<details class="req-group" id="tema-${esc(g.id)}" data-group="${esc(g.id)}"${req.g || reqOpen.has(g.id) ? " open" : ""}>
+      <summary><span class="req-gt">${esc(titles[g.id])}</span><span class="req-gs">${sum}</span>${chev(1, 18)}</summary>
+      <ol class="reqs">${g.list.map(reqRow).join("")}</ol>
+    </details>`;
+  }).join("")}</div>`;
+}
+function renderReqList() {
+  const box = document.getElementById("req-rows"), stats = document.getElementById("req-stats"), badge = document.getElementById("req-count");
+  if (!box) return;
+  const short = Object.fromEntries((REQ.groups || []).map(g => [g.id, g.short || g.title]));
+  const list = REQ.items.filter(r => (!req.g || r.group === req.g) && (!req.st || reqSt(r) === req.st));
+  const active = [short[req.g], REQ_ST[req.st]].filter(Boolean);
+  badge.textContent = active.length; badge.hidden = !active.length;
+  stats.innerHTML = active.length ? `Найдено: ${list.length} · ${esc(active.join(" · "))} <button class="reset-all" id="req-reset" type="button">Сбросить</button>` : "";
+  stats.hidden = !active.length;
+  if (active.length) document.getElementById("req-reset").addEventListener("click", () => { req.g = req.st = ""; syncReqChips(); renderReqList(); });
+  box.innerHTML = list.length ? reqGroupsHtml(list) : `<p class="prose" style="color:var(--muted)">Таких обращений нет.</p>`;
+  box.querySelectorAll("details[data-group]").forEach(el => el.addEventListener("toggle", () => {
+    if (req.g) return;  // a picked topic is open by the filter, not by the reader
+    if (el.open) reqOpen.add(el.dataset.group); else reqOpen.delete(el.dataset.group);
+  }));
+}
+function syncReqChips() {
+  document.querySelectorAll("#req-panel [data-g]").forEach(x => x.setAttribute("aria-pressed", x.dataset.g === req.g));
+  document.querySelectorAll("#req-panel [data-st]").forEach(x => x.setAttribute("aria-pressed", x.dataset.st === req.st));
+}
+function mountReqs(box) {
+  const gs = (REQ.groups || []).filter(g => REQ.items.some(r => r.group === g.id));
+  box.innerHTML = `
+    <h2>Отправленные обращения</h2>
+    <p class="prose" style="color:var(--muted);margin:0 0 14px">Пока издание не зарегистрировано, члены редакции отправляют вопросы как граждане, по закону № 59-ФЗ: ответ в течение 30 дней.</p>
+    <div class="req-head">
+      <button class="fbtn" id="req-toggle" type="button" aria-expanded="${req.panel}" aria-controls="req-panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        Фильтр <span class="f-count" id="req-count" hidden></span>
+      </button>
+    </div>
+    <div class="fpanel req-panel" id="req-panel"${req.panel ? "" : " hidden"}>
+      <div class="fgroup"><div class="flabel">Тема</div>
+        <div class="chips" role="group" aria-label="Тема">${gs.map(g =>
+          `<button class="chip" type="button" data-g="${esc(g.id)}" aria-pressed="false">${esc(g.short || g.title)}</button>`).join("")}</div></div>
+      <div class="fgroup"><div class="flabel">Статус</div>
+        <div class="chips" role="group" aria-label="Статус">${Object.entries(REQ_ST).map(([k, t]) =>
+          `<button class="chip" type="button" data-st="${k}" aria-pressed="false">${t}</button>`).join("")}</div></div>
+    </div>
+    <div class="feed-stats" id="req-stats" hidden></div>
+    <div id="req-rows"></div>
     <p class="src" style="margin-top:12px">Минтранс — Министерство транспорта и дорожного хозяйства Смоленской области. Управление транспорта — Управление транспорта и дорожного хозяйства Администрации города Смоленска.</p>`;
+  const tg = document.getElementById("req-toggle"), panel = document.getElementById("req-panel");
+  tg.addEventListener("click", () => { req.panel = !req.panel; panel.hidden = !req.panel; tg.setAttribute("aria-expanded", String(req.panel)); });
+  box.querySelectorAll("[data-g]").forEach(b => b.addEventListener("click", () => { req.g = req.g === b.dataset.g ? "" : b.dataset.g; syncReqChips(); renderReqList(); }));
+  box.querySelectorAll("[data-st]").forEach(b => b.addEventListener("click", () => { req.st = req.st === b.dataset.st ? "" : b.dataset.st; syncReqChips(); renderReqList(); }));
+  syncReqChips();
+  renderReqList();
 }
 
-function renderRequests(sub) {
+// «Запросы и ответы» has two tabs (Evgenii 11.11.2026: the letters archive is its own section, not under the appeals):
+// «Обращения» (#zaprosy, #zaprosy/<topic id>) and «Все письма» (#zaprosy/arhiv).
+const ztabs = cur => `<div class="feed-head">
+      <div class="fh-row"><div class="eyebrow">Запросы и ответы</div></div>
+      <div class="mtabs" aria-label="Запросы и ответы">
+        <a href="#zaprosy"${cur === "req" ? ' aria-current="page"' : ""}>Обращения</a>
+        <a href="#zaprosy/arhiv"${cur === "arhiv" ? ' aria-current="page"' : ""}>Все письма</a>
+      </div>
+    </div>`;
+function renderRequests(sub, back) {
   setNav("zaprosy");
+  if (sub === "arhiv") return renderLetters(back);
   view.innerHTML = `
-    <div class="eyebrow">Запросы и ответы</div>
-    <h1 class="page-title" style="margin-top:8px">Что мы спросили у властей</h1>
+    ${ztabs("req")}
+    <h1 class="page-title">Что мы спросили у властей</h1>
     <p class="lead-text">Здесь наши вопросы администрации города, областному Минтрансу и МУТТП. Ответы публикуем целиком, со сканом, и отмечаем, если срок ответа нарушен.</p>
     <section class="section">
       <h2>Почему это быстрее</h2>
@@ -890,32 +991,42 @@ function renderRequests(sub) {
         <div><span class="big hl">7 дней</span><span>Ответ на запрос редакции СМИ</span><small>Закон «О СМИ», ст. 39–40. Об отказе или отсрочке орган сообщает за 3 дня.</small></div>
       </div>
     </section>
-    <section class="section">
+    <section class="section" id="req-list">
       <h2>Отправленные обращения</h2>
-      <p class="prose" style="color:var(--muted);margin:0 0 14px">Пока издание не зарегистрировано, члены редакции отправляют вопросы как граждане, по закону № 59-ФЗ: ответ в течение 30 дней.</p>
-      <div id="req-list"><div class="loading">Загружаем список…</div></div>
-    </section>
-    <section class="section" id="arhiv"><div class="loading">Загружаем архив ответов…</div></section>`;
+      <div class="loading">Загружаем список…</div>
+    </section>`;
   const seq = routeSeq;
-  getJSON("requests.json").then(d => d.items || [], () => null).then(list => {
+  getJSON("requests.json").then(d => d, () => null).then(d => {
     const box = document.getElementById("req-list");
     if (seq !== routeSeq || !box) return;
-    box.innerHTML = list && list.length ? reqListHtml(list) : `<p class="prose">Список не загрузился. Обновите страницу.</p>`;
+    if (!d || !(d.items || []).length) { box.innerHTML = `<h2>Отправленные обращения</h2><p class="prose">Список не загрузился. Обновите страницу.</p>`; return; }
+    REQ = d;
+    if (sub && (d.groups || []).some(g => g.id === sub)) { req.g = sub; req.st = ""; }
+    mountReqs(box);
+    if (back && ans.scrollY) window.scrollTo(0, ans.scrollY);  // back from an answer: where the reader was
+    else if (req.g && sub === req.g) box.scrollIntoView();
   });
+}
+function renderLetters(back) {
+  view.innerHTML = `
+    ${ztabs("arhiv")}
+    <div id="arhiv"><div class="loading">Загружаем письма…</div></div>`;
+  const seq = routeSeq;
   loadAnswers().then(list => {
     const box = document.getElementById("arhiv");
     if (seq !== routeSeq || !box) return;
-    if (!list || !list.length) { box.remove(); return; }  // no archive on the server yet
+    if (!list || !list.length) { box.innerHTML = `<div class="empty">Письма не загрузились. Обновите страницу.</div>`; return; }
     renderArchive(box);
-    if (sub === "arhiv") window.scrollTo(0, ans.scrollY || box.getBoundingClientRect().top + window.scrollY - 12);
+    if (back && ans.scrollY) window.scrollTo(0, ans.scrollY);
   });
 }
 
 // The archive of official answers the group posted in its VK album: data/answers.json is written on the Mac,
 // the scans (private persons' names blacked out) are in thumbs/answers on our server, never loaded from VK.
-// The «обещали — вышло» picks are editorial text kept in the repo (answers-picks.json, {letter id: pick}).
+// The «обещали — вышло» picks are editorial text kept in the repo (answers-picks.json, {letter id: pick}). Since 11.11.2026
+// (Evgenii: the block on top was unclear) they show only as the pill on the letter and its page, found with «Проверили обещание».
 const PICK = { done: ["ok", "Выполнено"], partly: ["wait", "Выполнено частично"], not: ["no", "Не выполнено"], unclear: ["wait", "Пока не ясно"] };
-const ans = { q: "", qText: "", topic: "", sender: "", shown: PAGE, scrollY: 0 };
+const ans = { q: "", qText: "", topic: "", sender: "", pick: false, shown: PAGE, scrollY: 0, from: "" };
 const OTHER = "Другие ведомства";  // senders with a single letter share one filter entry
 let ANS = null, ANS_LOAD = null, ANS_ONE = new Set();
 const ansDate = a => a.date_approx === "year" ? `${a.date.slice(0, 4)} год` : human(a.date);
@@ -936,6 +1047,7 @@ function loadAnswers() {
   }, () => { ANS_LOAD = null; return null; });
 }
 function ansMatches(a) {
+  if (ans.pick && !a.pick) return false;
   if (ans.topic && !(a.topics || []).includes(ans.topic)) return false;
   if (ans.sender && (ans.sender === OTHER ? !ANS_ONE.has(a.sender_short) : a.sender_short !== ans.sender)) return false;
   return !ans.q || ans.q.split(" ").every(w => a._hay.includes(w));
@@ -957,22 +1069,15 @@ function renderArchive(box) {
   const topics = Object.entries(count("topics")).sort((x, y) => y[1] - x[1]).map(([t]) => t);
   const senders = Object.entries(count("sender_short")).filter(([, n]) => n > 1).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0], "ru")).map(([t]) => t);
   if (ANS_ONE.size > 1) senders.push(OTHER); else senders.push(...ANS_ONE);
-  const picks = ANS.filter(a => a.pick).sort((x, y) => (x.pick.order || 99) - (y.pick.order || 99));
+  const picks = ANS.some(a => a.pick);
   box.innerHTML = `
-      <h2>Архив ответов ${Math.min(...years)}–${Math.max(...years)}</h2>
-      <p class="prose ans-intro">Ответы ведомств на обращения читателей и участников группы, которые мы публиковали в альбоме ВКонтакте, и ответы на наши обращения через интернет-приёмную администрации города. У каждого письма есть скан. Личные данные частных лиц закрыты.</p>
-      ${picks.length ? `<h3 class="ans-h3">Что обещали и что вышло</h3>
-      <div class="picks">${picks.map(a => `<a class="pick" href="#otvet/${esc(a.id)}">
-          <small>${ansDate(a)} · ${esc(a.sender_short || a.sender)}</small>
-          <span><b>${pickLead(a.pick)}:</b> ${esc(a.pick.promised)}</span>
-          <span><b>Вышло:</b> ${esc(a.pick.outcome)}</span>
-          ${pickPill(a.pick.status)}
-        </a>`).join("")}</div>
-      <h3 class="ans-h3">Все письма</h3>` : ""}
+      <h1 class="page-title">Все письма</h1>
+      <p class="lead-text">Ответы ведомств за ${Math.min(...years)}–${Math.max(...years)} годы: на обращения читателей и участников группы, которые мы публиковали в альбоме ВКонтакте, и на наши обращения через интернет-приёмную администрации города. У каждого письма есть скан. Личные данные частных лиц закрыты.</p>
       <div class="ans-tools">
         <input id="ans-q" type="search" placeholder="Поиск по ответам" autocomplete="off" aria-label="Поиск по ответам" value="${esc(ans.qText)}">
         <div class="chips" role="group" aria-label="Тема">${topics.map(t =>
           `<button class="chip" type="button" data-topic="${esc(t)}" aria-pressed="${t === ans.topic}">${esc(t)}</button>`).join("")}</div>
+        ${picks ? `<div class="chips"><button class="chip" type="button" id="ans-pick" aria-pressed="${ans.pick}">Проверили обещание</button></div>` : ""}
         <select id="ans-sender" aria-label="Ведомство"><option value="">Все ведомства</option>${senders.map(t =>
           `<option${t === ans.sender ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>
       </div>
@@ -990,15 +1095,17 @@ function renderArchive(box) {
     renderAnsList();
   }));
   document.getElementById("ans-sender").addEventListener("change", e => { ans.sender = e.target.value; ans.shown = PAGE; renderAnsList(); });
+  const pk = document.getElementById("ans-pick");
+  if (pk) pk.addEventListener("click", () => { ans.pick = !ans.pick; ans.shown = PAGE; pk.setAttribute("aria-pressed", ans.pick); renderAnsList(); });
   renderAnsList();
 }
 function renderAnsList() {
   const list = ANS.filter(ansMatches), stats = document.getElementById("ans-stats");
-  const active = [ans.qText && `«${ans.qText}»`, ans.topic, ans.sender].filter(Boolean);
+  const active = [ans.qText && `«${ans.qText}»`, ans.pick && "Проверили обещание", ans.topic, ans.sender].filter(Boolean);
   stats.innerHTML = active.length ? `Найдено: ${list.length} · ${esc(active.join(" · "))} <button class="reset-all" id="ans-reset" type="button">Сбросить</button>` : "";
   stats.hidden = !active.length;
   if (active.length) document.getElementById("ans-reset").addEventListener("click", () => {
-    Object.assign(ans, { q: "", qText: "", topic: "", sender: "", shown: PAGE });
+    Object.assign(ans, { q: "", qText: "", topic: "", sender: "", pick: false, shown: PAGE });
     renderArchive(document.getElementById("arhiv"));
   });
   document.getElementById("ans-list").innerHTML = list.slice(0, ans.shown).map(ansRow).join("")
@@ -1016,7 +1123,8 @@ function renderAnswer(id) {
     return;
   }
   const a = ANS.find(x => x.id === id);
-  const back = `<a class="back" href="#zaprosy/arhiv">${chev(-1, 16)} Все ответы</a>`;
+  const from = ans.from && ans.from !== "zaprosy/arhiv" ? ans.from : "zaprosy/arhiv";  // an appeal's «Читать ответ» leads back to the appeals
+  const back = `<a class="back" href="#${esc(from)}">${chev(-1, 16)} ${from === "zaprosy/arhiv" ? "Все письма" : "Обращения"}</a>`;
   if (!a) { view.innerHTML = `${back}<div class="empty">Такого письма в архиве нет.</div>`; return; }
   const pages = a.pages || [];
   view.innerHTML = `
@@ -1114,8 +1222,8 @@ function route() {
     }
   }
   else if (h === "raspisanie" || h.startsWith("raspisanie/")) { const again = lastHash.startsWith("raspisanie"); renderSchedule(h.split("/")[1]); if (!again) window.scrollTo(0, 0); }
-  else if (h === "zaprosy" || h === "zaprosy/arhiv") { window.scrollTo(0, 0); renderRequests(h.split("/")[1]); }
-  else if (h.startsWith("otvet/")) { if (lastHash.startsWith("zaprosy")) ans.scrollY = window.scrollY; renderAnswer(h.slice(6)); window.scrollTo(0, 0); }
+  else if (h === "zaprosy" || h.startsWith("zaprosy/")) { const back = lastHash.startsWith("otvet/"); window.scrollTo(0, 0); renderRequests(h.split("/")[1], back); }
+  else if (h.startsWith("otvet/")) { if (lastHash.startsWith("zaprosy")) { ans.scrollY = window.scrollY; ans.from = lastHash; } else if (!lastHash.startsWith("otvet/")) ans.from = ""; renderAnswer(h.slice(6)); window.scrollTo(0, 0); }
   else if (h === "redakciya") { renderAbout(); window.scrollTo(0, 0); }
   else if (h === "glavnoe") { renderDigests(); window.scrollTo(0, 0); }
   else if (h.startsWith("glavnoe/")) { renderDigest(h.slice(8)); window.scrollTo(0, 0); }
